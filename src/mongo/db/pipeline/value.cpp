@@ -698,6 +698,7 @@ int Value::compare(const Value& rL,
 
     int ret = lType == rType ? 0  // fast-path common case
                              : cmp(canonicalizeBSONType(lType), canonicalizeBSONType(rType));
+	double number = 0;
 
     if (ret)
         return ret;
@@ -735,6 +736,13 @@ int Value::compare(const Value& rL,
                 case NumberDouble:
                     return compareDecimalToDouble(rL._storage.getDecimal(),
                                                   rR._storage.doubleValue);
+				case String:
+				{
+					if (parseNumberFromString<double>(rR.getString(), &number).isOK())
+						return compareDecimalToDouble(rL._storage.getDecimal(), number);
+					else
+						invariant(false);
+				}
                 default:
                     invariant(false);
             }
@@ -752,6 +760,13 @@ int Value::compare(const Value& rL,
                     return compareDoubles(rL._storage.intValue, rR._storage.doubleValue);
                 case NumberDecimal:
                     return compareIntToDecimal(rL._storage.intValue, rR._storage.getDecimal());
+				case String:
+				{
+					if (parseNumberFromString<double>(rR.getString(), &number).isOK())
+						return compareDoubles(rL._storage.intValue, number);
+					else
+						invariant(false);
+				}
                 default:
                     invariant(false);
             }
@@ -767,6 +782,13 @@ int Value::compare(const Value& rL,
                     return compareLongToDouble(rL._storage.longValue, rR._storage.doubleValue);
                 case NumberDecimal:
                     return compareLongToDecimal(rL._storage.longValue, rR._storage.getDecimal());
+				case String:
+				{
+					if (parseNumberFromString<double>(rR.getString(), &number).isOK())
+						return compareLongToDouble(rL._storage.longValue, number);
+					else
+						invariant(false);
+				}
                 default:
                     invariant(false);
             }
@@ -783,6 +805,13 @@ int Value::compare(const Value& rL,
                 case NumberDecimal:
                     return compareDoubleToDecimal(rL._storage.doubleValue,
                                                   rR._storage.getDecimal());
+				case String:
+				{
+					if (parseNumberFromString<double>(rR.getString(), &number).isOK())
+						return compareDoubles(rL._storage.doubleValue, number);
+					else
+						invariant(false);
+				}
                 default:
                     invariant(false);
             }
@@ -792,6 +821,18 @@ int Value::compare(const Value& rL,
             return memcmp(rL._storage.oid, rR._storage.oid, OID::kOIDSize);
 
         case String: {
+			switch (rType) {
+                case NumberDouble:
+                case NumberInt:
+                case NumberLong:
+                case NumberDecimal: {
+					StringData rRs(rR.coerceToString());
+					if (!stringComparator)
+						return rL.getStringData().compare(rRs);
+					else
+						return stringComparator->compare(rL.getStringData(), rRs);
+				}
+			}
             if (!stringComparator) {
                 return rL.getStringData().compare(rR.getStringData());
             }
