@@ -3898,7 +3898,7 @@ const char* ExpressionToString::getOpName() const {
 
 Value ExpressionToNumber::evaluate(const Document& root) const {
 	Value pNumber(vpOperand[0]->evaluate(root));
-	switch (pString.getType())
+	switch (pNumber.getType())
 	{
 		case NumberDouble:
         case NumberInt:
@@ -3911,7 +3911,7 @@ Value ExpressionToNumber::evaluate(const Document& root) const {
             return Value(0.0);
 		default:
 			double number = 0;
-			if (parseNumberFromString<double>(vpOperand[0]->evaluate(root).coerceToString(), &number).isOK())
+			if (parseNumberFromString<double>(pNumber.coerceToString(), &number).isOK())
 				return Value(number);
 			else
 				return Value(0.0);
