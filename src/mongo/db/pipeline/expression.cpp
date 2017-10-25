@@ -3869,6 +3869,60 @@ const char* ExpressionToUpper::getOpName() const {
     return "$toUpper";
 }
 
+/* ------------------------- ExpressionToString -------------------------- */
+
+Value ExpressionToString::evaluate(const Document& root) const {
+	Value pString(vpOperand[0]->evaluate(root));
+	switch (pString.getType())
+	{
+		case Code:
+        case Symbol:
+        case String:
+			return pString;
+		case EOO:
+        case jstNULL:
+        case Undefined:
+            return Value("");
+		default:
+			string str(pString.coerceToString());
+			return Value(pString.coerceToString());
+	}
+}
+
+REGISTER_EXPRESSION(toString, ExpressionToString::parse);
+const char* ExpressionToString::getOpName() const {
+    return "$toString";
+}
+
+/* ------------------------- ExpressionToNumber -------------------------- */
+
+Value ExpressionToNumber::evaluate(const Document& root) const {
+	Value pNumber(vpOperand[0]->evaluate(root));
+	switch (pString.getType())
+	{
+		case NumberDouble:
+        case NumberInt:
+        case NumberLong:
+        case NumberDecimal:
+			return pNumber;
+		case EOO:
+        case jstNULL:
+        case Undefined:
+            return Value(0.0);
+		default:
+			double number = 0;
+			if (parseNumberFromString<double>(vpOperand[0]->evaluate(root).coerceToString(), &number).isOK())
+				return Value(number);
+			else
+				return Value(0.0);
+	}
+}
+
+REGISTER_EXPRESSION(toNumber, ExpressionToNumber::parse);
+const char* ExpressionToNumber::getOpName() const {
+    return "$toNumber";
+}
+
 /* ------------------------- ExpressionTrunc -------------------------- */
 
 Value ExpressionTrunc::evaluateNumericArg(const Value& numericArg) const {
