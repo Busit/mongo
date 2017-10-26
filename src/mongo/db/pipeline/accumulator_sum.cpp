@@ -56,7 +56,10 @@ const char subTotalErrorName[] = "subTotalError";  // Used for extra precision.
 
 
 void AccumulatorSum::processInternal(const Value& input, bool merging) {
-    if (!input.numeric()) {
+	if (input.nullish()) return;
+	if (input.numeric() && std::isnan(input.coerceToDouble())) return;
+	
+    if (!input.numeric() && input.getType() != String && input.getType() != Bool) {
         if (merging && input.getType() == Object) {
             // Process merge document, see getValue() below.
             nonDecimalTotal.addDouble(
@@ -79,6 +82,15 @@ void AccumulatorSum::processInternal(const Value& input, bool merging) {
         case NumberDecimal:
             decimalTotal = decimalTotal.add(input.coerceToDecimal());
             break;
+		case Bool:
+			nonDecimalTotal.addDouble(input.getBool() ? 1.0 : 0.0);
+            break;
+		case String: {
+			double number = 0;
+			if (parseNumberFromString<double>(input.coerceToString(), &number).isOK())
+				nonDecimalTotal.addDouble(number);
+			break;
+		}
         default:
             MONGO_UNREACHABLE;
     }
