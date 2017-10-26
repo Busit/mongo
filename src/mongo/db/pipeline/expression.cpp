@@ -948,12 +948,12 @@ Value ExpressionCompare::evaluateInternal(Variables* vars) const {
 		else
 		{
 			if( leftIsNull && rightIsNumber )
-				rightIsNaN = RIGHT_NAN;
+				rightIsNaN = std::isnan(pRight.coerceToDouble());
 			if( rightIsNull && leftIsNumber )
-				leftIsNaN = LEFT_NAN;
+				leftIsNaN = std::isnan(pLeft.coerceToDouble());
 		}
 		
-		switch(cmpOP) {
+		switch(cmpOp) {
 			case GT:
 			case LT:
 				if( leftIsNull || leftIsNaN || rightIsNull || rightIsNaN ) return Value(false);
