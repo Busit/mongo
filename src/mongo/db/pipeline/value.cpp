@@ -696,12 +696,9 @@ int Value::compare(const Value& rL,
     BSONType lType = rL.getType();
     BSONType rType = rR.getType();
 
-    int ret = lType == rType ? 0  // fast-path common case
-                             : 0; //cmp(canonicalizeBSONType(lType), canonicalizeBSONType(rType));
+    int ret = 0;
+	int typeCompare = cmp(canonicalizeBSONType(lType), canonicalizeBSONType(rType));
 	double number = 0;
-
-    if (ret)
-        return ret;
 
     switch (lType) {
         // Order of types is the same as in compareElementValues() to make it easier to verify
@@ -741,7 +738,7 @@ int Value::compare(const Value& rL,
 					if (parseNumberFromString<double>(rR.coerceToString(), &number).isOK())
 						return compareDecimalToDouble(rL._storage.getDecimal(), number);
 					else
-						invariant(false);
+						return typeCompare;
 				}
             }
         }
@@ -763,7 +760,7 @@ int Value::compare(const Value& rL,
 					if (parseNumberFromString<double>(rR.coerceToString(), &number).isOK())
 						return compareDoubles(rL._storage.intValue, number);
 					else
-						invariant(false);
+						return typeCompare;
 				}
             }
         }
@@ -783,7 +780,7 @@ int Value::compare(const Value& rL,
 					if (parseNumberFromString<double>(rR.coerceToString(), &number).isOK())
 						return compareLongToDouble(rL._storage.longValue, number);
 					else
-						invariant(false);
+						return typeCompare;
 				}
             }
         }
@@ -804,7 +801,7 @@ int Value::compare(const Value& rL,
 					if (parseNumberFromString<double>(rR.coerceToString(), &number).isOK())
 						return compareDoubles(rL._storage.doubleValue, number);
 					else
-						invariant(false);
+						return typeCompare;
 				}
             }
         }
