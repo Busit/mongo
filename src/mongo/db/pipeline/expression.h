@@ -1575,6 +1575,15 @@ public:
     const char* getOpName() const final;
 };
 
+class ExpressionNaN final : public ExpressionFixedArity<ExpressionNaN, 1> {
+public:
+    explicit ExpressionNaN(const boost::intrusive_ptr<ExpressionContext>& expCtx)
+        : ExpressionFixedArity<ExpressionNaN, 1>(expCtx) {}
+
+    Value evaluateInternal(Variables* vars) const final;
+    const char* getOpName() const final;
+};
+
 
 class ExpressionTrunc final : public ExpressionSingleNumericArg<ExpressionTrunc> {
 public:
