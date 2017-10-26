@@ -3871,8 +3871,8 @@ const char* ExpressionToUpper::getOpName() const {
 
 /* ------------------------- ExpressionToString -------------------------- */
 
-Value ExpressionToString::evaluate(const Document& root) const {
-	Value pString(vpOperand[0]->evaluate(root));
+Value ExpressionToString::evaluateInternal(Variables* vars) const {
+	Value pString(vpOperand[0]->evaluateInternal(vars));
 	switch (pString.getType())
 	{
 		case Code:
@@ -3885,7 +3885,7 @@ Value ExpressionToString::evaluate(const Document& root) const {
             return Value("");
 		default:
 			string str(pString.coerceToString());
-			return Value(pString.coerceToString());
+			return Value(str);
 	}
 }
 
@@ -3896,8 +3896,8 @@ const char* ExpressionToString::getOpName() const {
 
 /* ------------------------- ExpressionToNumber -------------------------- */
 
-Value ExpressionToNumber::evaluate(const Document& root) const {
-	Value pNumber(vpOperand[0]->evaluate(root));
+Value ExpressionToNumber::evaluateInternal(Variables* vars) const {
+	Value pNumber(vpOperand[0]->evaluateInternal(vars));
 	switch (pNumber.getType())
 	{
 		case NumberDouble:
