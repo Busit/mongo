@@ -3923,6 +3923,31 @@ const char* ExpressionToNumber::getOpName() const {
     return "$toNumber";
 }
 
+/* ------------------------- ExpressionNaN -------------------------- */
+
+Value ExpressionNaN::evaluateInternal(Variables* vars) const {
+	Value pNaN(vpOperand[0]->evaluateInternal(vars));
+	switch (pNaN.getType())
+	{
+		case NumberDouble:
+        case NumberInt:
+        case NumberLong:
+        case NumberDecimal:
+			return Value(std::isnan(pNaN.coerceToDouble()));
+		case Bool: // bool can always be converted to 0 or 1
+			return Value(false); 
+		case String:
+			return Value(Value::compare(pNaN, Value(std::nan("NaN")), nullptr) <= 0 ? true : false);
+		default: // everything else is NaN
+            return Value(true);
+	}
+}
+
+REGISTER_EXPRESSION(nan, ExpressionNaN::parse);
+const char* ExpressionNaN::getOpName() const {
+    return "$nan";
+}
+
 /* ------------------------- ExpressionTrunc -------------------------- */
 
 Value ExpressionTrunc::evaluateNumericArg(const Value& numericArg) const {
