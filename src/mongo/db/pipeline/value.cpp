@@ -652,6 +652,9 @@ string Value::coerceToString() const {
         case jstNULL:
         case Undefined:
             return "";
+			
+		case Bool:
+			return getBool() ? "true" : "false";
 
         default:
             uassert(16007,
