@@ -413,10 +413,10 @@ int Document::compare(const Document& rL,
 
         // For compatibility with BSONObj::woCompare() consider the canonical type of values
         // before considerting their names.
-        const int rCType = canonicalizeBSONType(rField.val.getType());
-        const int lCType = canonicalizeBSONType(lField.val.getType());
-        if (lCType != rCType)
-            return lCType < rCType ? -1 : 1;
+        // const int rCType = canonicalizeBSONType(rField.val.getType());
+        // const int lCType = canonicalizeBSONType(lField.val.getType());
+        // if (lCType != rCType)
+        //     return lCType < rCType ? -1 : 1;
 
         const int nameCmp = lField.nameSD().compare(rField.nameSD());
         if (nameCmp)
