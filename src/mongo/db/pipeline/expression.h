@@ -1556,6 +1556,26 @@ public:
 };
 
 
+class ExpressionToString final : public ExpressionFixedArity<ExpressionToString, 1> {
+public:
+    explicit ExpressionToString(const boost::intrusive_ptr<ExpressionContext>& expCtx)
+        : ExpressionFixedArity<ExpressionToString, 1>(expCtx) {}
+
+    Value evaluateInternal(Variables* vars) const final;
+    const char* getOpName() const final;
+};
+
+
+class ExpressionToNumber final : public ExpressionFixedArity<ExpressionToNumber, 1> {
+public:
+    explicit ExpressionToNumber(const boost::intrusive_ptr<ExpressionContext>& expCtx)
+        : ExpressionFixedArity<ExpressionToNumber, 1>(expCtx) {}
+
+    Value evaluateInternal(Variables* vars) const final;
+    const char* getOpName() const final;
+};
+
+
 class ExpressionTrunc final : public ExpressionSingleNumericArg<ExpressionTrunc> {
 public:
     explicit ExpressionTrunc(const boost::intrusive_ptr<ExpressionContext>& expCtx)

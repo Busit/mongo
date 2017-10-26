@@ -832,6 +832,7 @@ int Value::compare(const Value& rL,
 					else
 						return stringComparator->compare(rL.getStringData(), rRs);
 				}
+				default: break;
 			}
             if (!stringComparator) {
                 return rL.getStringData().compare(rR.getStringData());
