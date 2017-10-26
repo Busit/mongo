@@ -889,7 +889,90 @@ Value ExpressionCompare::evaluateInternal(Variables* vars) const {
     Value pLeft(vpOperand[0]->evaluateInternal(vars));
     Value pRight(vpOperand[1]->evaluateInternal(vars));
 
-    int cmp = getExpressionContext()->getValueComparator().compare(pLeft, pRight);
+	BSONType lType = pLeft.getType();
+	BSONType rType = pRight.getType();
+	
+	// handle edge cases with null & NaN :
+	// - null and NaN only EQ or GTE or LTE another null or NaN
+	// - null and NaN NE anything else than null or NaN
+	// - null and NaN are never GT or LT than anything
+	if( cmpOp != CMP )
+	{
+		bool leftIsNull = false;
+		bool leftIsNumber = false;
+		bool leftIsNaN = false;
+		bool rightIsNull = false;
+		bool rightIsNumber = false;
+		bool rightIsNaN = false;
+		
+		switch(lType) {
+			case EOO:
+			case MinKey:
+			case MaxKey:
+			case Undefined:
+			case jstNULL: leftIsNull = true; break;
+			case NumberDouble:
+			case NumberInt:
+			case NumberLong:
+			case NumberDecimal: leftIsNumber = true; break;
+			default: break;
+		}
+		
+		switch(rType) {
+			case EOO:
+			case MinKey:
+			case MaxKey:
+			case Undefined:
+			case jstNULL: rightIsNull = true; break;
+			case NumberDouble:
+			case NumberInt:
+			case NumberLong:
+			case NumberDecimal: rightIsNumber = true; break;
+			default: break;
+		}
+		
+		if( (rightIsNumber && lType == String) )
+		{
+			rightIsNaN = std::isnan(pRight.coerceToDouble());
+			double number = 0;
+			if (parseNumberFromString<double>(pLeft.coerceToString(), &number).isOK())
+				leftIsNaN = std::isnan(number);
+			else
+				leftIsNaN = true;
+		}
+		else if( leftIsNumber && rightIsNumber )
+		{
+			rightIsNaN = std::isnan(pRight.coerceToDouble());
+			leftIsNaN = std::isnan(pLeft.coerceToDouble());
+		}
+		else
+		{
+			if( leftIsNull && rightIsNumber )
+				rightIsNaN = RIGHT_NAN;
+			if( rightIsNull && leftIsNumber )
+				leftIsNaN = LEFT_NAN;
+		}
+		
+		switch(cmpOP) {
+			case GT:
+			case LT:
+				if( leftIsNull || leftIsNaN || rightIsNull || rightIsNaN ) return Value(false);
+				break;
+			case EQ:
+			case GTE:
+			case LTE:
+				if( (leftIsNull || leftIsNaN) && (rightIsNull || rightIsNaN) ) return Value(true);
+				if( leftIsNull || leftIsNaN || rightIsNull || rightIsNaN ) return Value(false);
+				break;
+			case NE:
+				if( (leftIsNull || leftIsNaN) && (rightIsNull || rightIsNaN) ) return Value(false);
+				if( leftIsNull || leftIsNaN || rightIsNull || rightIsNaN ) return Value(true);
+				break;
+			default: break;
+		}
+	}
+	
+	int cmp = getExpressionContext()->getValueComparator().compare(pLeft, pRight);
 
     // Make cmp one of 1, 0, or -1.
     if (cmp == 0) {
