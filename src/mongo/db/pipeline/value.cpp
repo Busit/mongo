@@ -708,17 +708,39 @@ int Value::compare(const Value& rL,
         case Undefined:
         case jstNULL:
         case MaxKey:
-        case MinKey:
-            return ret;
+        case MinKey: {
+			if (typeCompare) return typeCompare;
+			else return ret;
+		}
 
         case Bool:
-            return rL.getBool() - rR.getBool();
+			switch (rType) {
+				case Bool:
+					return rL.getBool() - rR.getBool();
+				case NumberDecimal:
+                case NumberInt:
+                case NumberLong:
+                case NumberDouble:
+					// TYPE AUTO CONVERSION : compare is left to right so convert rL to number
+					return Value::compare(Value(rL.getBool() ? 1 : 0), rR, stringComparator);
+				case String:
+					// TYPE AUTO CONVERSION : compare is left to right so convert rL to string
+					return Value::compare(Value(rL.getBool() ? "true" : "false"), rR, stringComparator);
+				default:
+					return typeCompare;
+			}
 
         case bsonTimestamp:  // unsigned
-            return cmp(rL._storage.timestampValue, rR._storage.timestampValue);
+		{
+			if (typeCompare) return typeCompare;
+			else return cmp(rL._storage.timestampValue, rR._storage.timestampValue);
+		}
 
         case Date:  // signed
-            return cmp(rL._storage.dateValue, rR._storage.dateValue);
+		{
+			if (typeCompare) return typeCompare;
+			else return cmp(rL._storage.dateValue, rR._storage.dateValue);
+		}
 
         // Numbers should compare by equivalence even if different types
 
@@ -733,13 +755,14 @@ int Value::compare(const Value& rL,
                 case NumberDouble:
                     return compareDecimalToDouble(rL._storage.getDecimal(),
                                                   rR._storage.doubleValue);
+				case Bool: 
+					// TYPE AUTO CONVERSION : compare is left to right so convert rL to bool
+					return Value::compare(Value(compareDecimalToInt(rL._storage.getDecimal(), 0) > 0 ? true : false), rR, stringComparator);
+				case String:
+					// TYPE AUTO CONVERSION : compare is left to right so convert rL to string
+					return Value::compare(Value(rL.coerceToString()), rR, stringComparator);
 				default:
-				{
-					if (parseNumberFromString<double>(rR.coerceToString(), &number).isOK())
-						return compareDecimalToDouble(rL._storage.getDecimal(), number);
-					else
-						return typeCompare;
-				}
+					return typeCompare;
             }
         }
 
@@ -755,13 +778,14 @@ int Value::compare(const Value& rL,
                     return compareDoubles(rL._storage.intValue, rR._storage.doubleValue);
                 case NumberDecimal:
                     return compareIntToDecimal(rL._storage.intValue, rR._storage.getDecimal());
+				case Bool: 
+					// TYPE AUTO CONVERSION : compare is left to right so convert rL to bool
+					return Value::compare(Value(rL._storage.intValue > 0 ? true : false), rR, stringComparator);
+				case String:
+					// TYPE AUTO CONVERSION : compare is left to right so convert rL to string
+					return Value::compare(Value(rL.coerceToString()), rR, stringComparator);
 				default:
-				{
-					if (parseNumberFromString<double>(rR.coerceToString(), &number).isOK())
-						return compareDoubles(rL._storage.intValue, number);
-					else
-						return typeCompare;
-				}
+					return typeCompare;
             }
         }
 
@@ -775,13 +799,14 @@ int Value::compare(const Value& rL,
                     return compareLongToDouble(rL._storage.longValue, rR._storage.doubleValue);
                 case NumberDecimal:
                     return compareLongToDecimal(rL._storage.longValue, rR._storage.getDecimal());
+				case Bool: 
+					// TYPE AUTO CONVERSION : compare is left to right so convert rL to bool
+					return Value::compare(Value(rL._storage.longValue > 0 ? true : false), rR, stringComparator);
+				case String:
+					// TYPE AUTO CONVERSION : compare is left to right so convert rL to string
+					return Value::compare(Value(rL.coerceToString()), rR, stringComparator);
 				default:
-				{
-					if (parseNumberFromString<double>(rR.coerceToString(), &number).isOK())
-						return compareLongToDouble(rL._storage.longValue, number);
-					else
-						return typeCompare;
-				}
+					return typeCompare;
             }
         }
 
@@ -796,18 +821,22 @@ int Value::compare(const Value& rL,
                 case NumberDecimal:
                     return compareDoubleToDecimal(rL._storage.doubleValue,
                                                   rR._storage.getDecimal());
+				case Bool: 
+					// TYPE AUTO CONVERSION : compare is left to right so convert rL to bool
+					return Value::compare(Value(rL._storage.doubleValue > 0.0 ? true : false), rR, stringComparator);
+				case String:
+					// TYPE AUTO CONVERSION : compare is left to right so convert rL to string
+					return Value::compare(Value(rL.coerceToString()), rR, stringComparator);
 				default:
-				{
-					if (parseNumberFromString<double>(rR.coerceToString(), &number).isOK())
-						return compareDoubles(rL._storage.doubleValue, number);
-					else
-						return typeCompare;
-				}
+					return typeCompare;
             }
         }
 
         case jstOID:
-            return memcmp(rL._storage.oid, rR._storage.oid, OID::kOIDSize);
+		{
+			if (typeCompare) return typeCompare;
+			else return memcmp(rL._storage.oid, rR._storage.oid, OID::kOIDSize);
+		}   
 
         case String: {
 			switch (rType) {
@@ -815,29 +844,42 @@ int Value::compare(const Value& rL,
                 case NumberInt:
                 case NumberLong:
                 case NumberDecimal: {
-					StringData rRs(rR.coerceToString());
-					if (!stringComparator)
-						return rL.getStringData().compare(rRs);
+					// TYPE AUTO CONVERSION : compare is left to right so convert rL to number
+					if (parseNumberFromString<double>(rL.coerceToString(), &number).isOK())
+						return Value::compare(Value(number), rR, stringComparator);
 					else
-						return stringComparator->compare(rL.getStringData(), rRs);
+						return Value::compare(Value(std::nan("NaN")), rR, stringComparator);
 				}
-				default: break;
+				case Bool:
+					// TYPE AUTO CONVERSION : compare is left to right so convert rR to string because it is easier than rL to bool
+					return Value::compare(rL, Value(rR.getBool() ? "true" : "false"), stringComparator)
+				case String: {
+					if (!stringComparator)
+						return rL.getStringData().compare(rR.getStringData());
+					else
+						return stringComparator->compare(rL.getStringData(), rR.getStringData());
+				}
+				default:
+					return typeCompare;
 			}
-            if (!stringComparator) {
-                return rL.getStringData().compare(rR.getStringData());
-            }
-
-            return stringComparator->compare(rL.getStringData(), rR.getStringData());
         }
 
         case Code:
         case Symbol:
-            return rL.getStringData().compare(rR.getStringData());
+		{
+			if (typeCompare) return typeCompare;
+			else return rL.getStringData().compare(rR.getStringData());
+		}
 
         case Object:
-            return Document::compare(rL.getDocument(), rR.getDocument(), stringComparator);
+		{
+			if (typeCompare) return typeCompare;
+			else return Document::compare(rL.getDocument(), rR.getDocument(), stringComparator);
+		}
 
         case Array: {
+			if (typeCompare) return typeCompare;
+			
             const vector<Value>& lArr = rL.getArray();
             const vector<Value>& rArr = rR.getArray();
 
@@ -854,6 +896,8 @@ int Value::compare(const Value& rL,
         }
 
         case DBRef: {
+			if (typeCompare) return typeCompare;
+			
             intrusive_ptr<const RCDBRef> l = rL._storage.getDBRef();
             intrusive_ptr<const RCDBRef> r = rR._storage.getDBRef();
             ret = cmp(l->ns.size(), r->ns.size());
@@ -864,6 +908,8 @@ int Value::compare(const Value& rL,
         }
 
         case BinData: {
+			if (typeCompare) return typeCompare;
+			
             ret = cmp(rL.getStringData().size(), rR.getStringData().size());
             if (ret)
                 return ret;
@@ -877,9 +923,14 @@ int Value::compare(const Value& rL,
         }
 
         case RegEx:  // same as String in this impl but keeping order same as compareElementValues
-            return rL.getStringData().compare(rR.getStringData());
+		{
+			if (typeCompare) return typeCompare;
+			else return rL.getStringData().compare(rR.getStringData());
+		}
 
         case CodeWScope: {
+			if (typeCompare) return typeCompare;
+			
             intrusive_ptr<const RCCodeWScope> l = rL._storage.getCodeWScope();
             intrusive_ptr<const RCCodeWScope> r = rR._storage.getCodeWScope();
 
