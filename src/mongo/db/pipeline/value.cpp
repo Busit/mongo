@@ -852,7 +852,7 @@ int Value::compare(const Value& rL,
 				}
 				case Bool:
 					// TYPE AUTO CONVERSION : compare is left to right so convert rR to string because it is easier than rL to bool
-					return Value::compare(rL, Value(rR.getBool() ? "true" : "false"), stringComparator)
+					return Value::compare(rL, Value(rR.getBool() ? "true" : "false"), stringComparator);
 				case String: {
 					if (!stringComparator)
 						return rL.getStringData().compare(rR.getStringData());
