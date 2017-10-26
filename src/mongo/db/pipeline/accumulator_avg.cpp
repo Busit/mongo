@@ -74,17 +74,38 @@ void AccumulatorAvg::processInternal(const Value& input, bool merging) {
 
     switch (input.getType()) {
         case NumberDecimal:
-            _decimalTotal = _decimalTotal.add(input.getDecimal());
-            _isDecimal = true;
+            if( std::isnan(input.coerceToDouble()) ) _count--; // ignore value
+			else 
+			{
+				_decimalTotal = _decimalTotal.add(input.getDecimal());
+				_isDecimal = true;
+			}
             break;
         case NumberLong:
             // Avoid summation using double as that loses precision.
-            _nonDecimalTotal.addLong(input.getLong());
+            if( std::isnan(input.coerceToDouble()) ) _count--; // ignore value
+			else _nonDecimalTotal.addLong(input.getLong());
             break;
         case NumberInt:
         case NumberDouble:
-            _nonDecimalTotal.addDouble(input.getDouble());
+			if( std::isnan(input.coerceToDouble()) ) _count--; // ignore value
+			else _nonDecimalTotal.addDouble(input.getDouble());
             break;
+		case Bool:
+			_nonDecimalTotal.addDouble(input.getBool() ? 1 : 0);
+			break;
+		case String: {
+			double number = 0;
+			if (parseNumberFromString<double>(input.coerceToString(), &number).isOK())
+				_nonDecimalTotal.addDouble(number);
+			else
+				_count--; // ignore value
+		}
+		case EOO:
+        case jstNULL:
+        case Undefined:
+			_count--; // ignore value
+			break;
         default:
             dassert(!input.numeric());
             return;
