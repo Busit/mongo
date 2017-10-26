@@ -914,7 +914,11 @@ Value ExpressionCompare::evaluateInternal(Variables* vars) const {
 			case NumberDouble:
 			case NumberInt:
 			case NumberLong:
-			case NumberDecimal: leftIsNumber = true; break;
+			case NumberDecimal: {
+				leftIsNumber = true; 
+				leftIsNaN = std::isnan(pLeft.coerceToDouble());
+				break;
+			}
 			default: break;
 		}
 		
@@ -927,30 +931,21 @@ Value ExpressionCompare::evaluateInternal(Variables* vars) const {
 			case NumberDouble:
 			case NumberInt:
 			case NumberLong:
-			case NumberDecimal: rightIsNumber = true; break;
+			case NumberDecimal: {
+				rightIsNumber = true; 
+				rightIsNaN = std::isnan(pRight.coerceToDouble());
+				break;
+			}
 			default: break;
 		}
 		
 		if( (rightIsNumber && lType == String) )
 		{
-			rightIsNaN = std::isnan(pRight.coerceToDouble());
 			double number = 0;
 			if (parseNumberFromString<double>(pLeft.coerceToString(), &number).isOK())
 				leftIsNaN = std::isnan(number);
 			else
 				leftIsNaN = true;
-		}
-		else if( leftIsNumber && rightIsNumber )
-		{
-			rightIsNaN = std::isnan(pRight.coerceToDouble());
-			leftIsNaN = std::isnan(pLeft.coerceToDouble());
-		}
-		else
-		{
-			if( leftIsNull && rightIsNumber )
-				rightIsNaN = std::isnan(pRight.coerceToDouble());
-			if( rightIsNull && leftIsNumber )
-				leftIsNaN = std::isnan(pLeft.coerceToDouble());
 		}
 		
 		switch(cmpOp) {
