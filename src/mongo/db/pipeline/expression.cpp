@@ -3948,6 +3948,33 @@ const char* ExpressionNaN::getOpName() const {
     return "$nan";
 }
 
+/* ------------------------- ExpressionNull -------------------------- */
+
+Value ExpressionNull::evaluateInternal(Variables* vars) const {
+	Value pNull(vpOperand[0]->evaluateInternal(vars));
+	switch (pNull.getType())
+	{
+		case EOO:
+        case MinKey:
+        case MaxKey:
+        case Undefined:
+        case jstNULL:
+            return Value(true);
+		case NumberDouble:
+        case NumberInt:
+        case NumberLong:
+        case NumberDecimal: // NaN is considered null
+			return Value(std::isnan(pNull.coerceToDouble()));
+		default: // everything else is not null
+            return Value(false);
+	}
+}
+
+REGISTER_EXPRESSION(isNull, ExpressionNull::parse);
+const char* ExpressionNull::getOpName() const {
+    return "$null";
+}
+
 /* ------------------------- ExpressionTrunc -------------------------- */
 
 Value ExpressionTrunc::evaluateNumericArg(const Value& numericArg) const {
