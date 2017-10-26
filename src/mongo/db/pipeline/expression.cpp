@@ -3914,7 +3914,7 @@ Value ExpressionToNumber::evaluateInternal(Variables* vars) const {
 			if (parseNumberFromString<double>(pNumber.coerceToString(), &number).isOK())
 				return Value(number);
 			else
-				return Value(0.0);
+				return Value(std::nan("NaN"));
 	}
 }
 
