@@ -4053,7 +4053,7 @@ Value ExpressionNull::evaluateInternal(Variables* vars) const {
 	}
 }
 
-REGISTER_EXPRESSION(isNull, ExpressionNull::parse);
+REGISTER_EXPRESSION(null, ExpressionNull::parse);
 const char* ExpressionNull::getOpName() const {
     return "$null";
 }
