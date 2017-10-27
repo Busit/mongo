@@ -3987,6 +3987,8 @@ Value ExpressionToNumber::evaluateInternal(Variables* vars) const {
         case jstNULL:
         case Undefined:
             return Value(std::nan("NaN"));
+		case Bool:
+			return Value(pNumber.getBool() ? 1 : 0);
 		default:
 			double number = 0;
 			if (parseNumberFromString<double>(pNumber.coerceToString(), &number).isOK())
