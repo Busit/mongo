@@ -728,7 +728,10 @@ int Value::compare(const Value& rL,
 					return Value::compare(Value(rL.getBool() ? 1 : 0), rR, stringComparator);
 				case String:
 					// TYPE AUTO CONVERSION : compare is left to right so convert rL to string
-					return Value::compare(Value(rL.getBool() ? "true" : "false"), rR, stringComparator);
+					if( rR.getString().length() == 1 )
+						return Value::compare(Value(rL.getBool() ? "1" : "0"), rR, stringComparator);
+					else
+						return Value::compare(Value(rL.getBool() ? "true" : "false"), rR, stringComparator);
 				default:
 					return typeCompare;
 			}
