@@ -63,6 +63,12 @@ Or download a prebuilt binary for Windows at www.mongodb.org.
 Debian/Ubuntu
 --------------
 
+NOTES:
+* Building requires at least 2GB RAM and 8GB spare disk space.
+* If GCC 5.3 is not in the stable release of your distribution, you will need to install unstable packages.
+	In this case you will end up with Scons 3+, Python 3+ and GCC 7+ neither of which is supported.
+	So make sure that your "alternatives" are pointing to GCC 5.3, Scons 2 and Python 2.7.
+
 To install dependencies on Debian or Ubuntu systems:
 
     # aptitude install scons build-essential
