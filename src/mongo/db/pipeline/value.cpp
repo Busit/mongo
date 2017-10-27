@@ -855,7 +855,10 @@ int Value::compare(const Value& rL,
 				}
 				case Bool:
 					// TYPE AUTO CONVERSION : compare is left to right so convert rR to string because it is easier than rL to bool
-					return Value::compare(rL, Value(rR.getBool() ? "true" : "false"), stringComparator);
+					if( rL.getString().length() == 1 )
+						return Value::compare(rL, Value(rR.getBool() ? "1" : "0"), stringComparator);
+					else
+						return Value::compare(rL, Value(rR.getBool() ? "true" : "false"), stringComparator);
 				case String: {
 					if (!stringComparator)
 						return rL.getStringData().compare(rR.getStringData());
