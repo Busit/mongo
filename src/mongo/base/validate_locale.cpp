@@ -28,7 +28,6 @@
 #include <stdexcept>
 
 #include <boost/filesystem/path.hpp>
-#include <codecvt>
 #include <locale>
 
 #include "mongo/base/init.h"
