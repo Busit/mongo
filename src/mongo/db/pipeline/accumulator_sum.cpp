@@ -128,6 +128,7 @@ Value AccumulatorSum::getValue(bool toBeMerged) const {
             // Sum doesn't fit a NumberLong, so return a NumberDouble instead.
             return Value(nonDecimalTotal.getDouble());
 
+		default:
         case NumberDouble:
             return Value(nonDecimalTotal.getDouble());
         case NumberDecimal: {
@@ -141,8 +142,6 @@ Value AccumulatorSum::getValue(bool toBeMerged) const {
             total = total.add(decimalTotal);
             return Value(total);
         }
-        default:
-            MONGO_UNREACHABLE;
     }
 }
 
