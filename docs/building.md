@@ -72,7 +72,7 @@ NOTES:
 To install dependencies on Debian or Ubuntu systems:
 
     # aptitude install scons build-essential
-    # aptitude install libboost-filesystem-dev libboost-program-options-dev libboost-system-dev libboost-thread-dev libssl-dev
+    # aptitude install libboost-filesystem-dev libboost-program-options-dev libboost-system-dev libboost-thread-dev libssl-dev devscripts
 
 To run tests as well, you will need PyMongo:
 
