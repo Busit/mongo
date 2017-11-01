@@ -112,8 +112,8 @@ Status ComparisonMatchExpression::init(StringData path, const BSONElement& rhs) 
 
 bool ComparisonMatchExpression::matchesSingleElement(const BSONElement& e) const {
 
-	BSONType lType = e.getType();
-	BSONType rType = _rhs.getType();
+	BSONType lType = e.type();
+	BSONType rType = _rhs.type();
 	
 	// handle edge cases with null & NaN :
 	// - null and NaN only EQ or GTE or LTE another null or NaN
@@ -180,10 +180,10 @@ bool ComparisonMatchExpression::matchesSingleElement(const BSONElement& e) const
 			if( (leftIsNull || leftIsNaN) && (rightIsNull || rightIsNaN) ) return true;
 			if( leftIsNull || leftIsNaN || rightIsNull || rightIsNaN ) return false;
 			break;
-		case NE:
-			if( (leftIsNull || leftIsNaN) && (rightIsNull || rightIsNaN) ) return false;
-			if( leftIsNull || leftIsNaN || rightIsNull || rightIsNaN ) return true;
-			break;
+		//case NE:
+		//	if( (leftIsNull || leftIsNaN) && (rightIsNull || rightIsNaN) ) return false;
+		//	if( leftIsNull || leftIsNaN || rightIsNull || rightIsNaN ) return true;
+		//	break;
 		default: break;
 	}
 	
