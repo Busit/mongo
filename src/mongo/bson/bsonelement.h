@@ -86,6 +86,18 @@ public:
      * by a BSONObj::ComparatorInterface.
      */
     using DeferredComparison = BSONComparatorInterfaceBase<BSONElement>::DeferredComparison;
+	
+	/**
+	 * Raw value type comparison.
+	 * *this is always the left hand side element.
+	 * throw a MsgAssertionException if the element is not of the required type
+	 * however all numeric types can compare between eachother
+	 */
+	int compareTo(std::string rhs, const StringData::ComparatorInterface* comparator) const;
+	int compareTo(double rhs) const;
+	int compareTo(int rhs) const;
+	int compareTo(long long rhs) const;
+	int compareTo(bool rhs) const;
 
     /** These functions, which start with a capital letter, throw a MsgAssertionException if the
         element is not of the required type. Example:

@@ -112,43 +112,82 @@ Status ComparisonMatchExpression::init(StringData path, const BSONElement& rhs) 
 
 bool ComparisonMatchExpression::matchesSingleElement(const BSONElement& e) const {
 
-    if (e.canonicalType() != _rhs.canonicalType()) {
-        // some special cases
-        //  jstNULL and undefined are treated the same
-        if (e.canonicalType() + _rhs.canonicalType() == 5) {
-            return matchType() == EQ || matchType() == LTE || matchType() == GTE;
-        }
-
-        if (_rhs.type() == MaxKey || _rhs.type() == MinKey) {
-            return matchType() != EQ;
-        }
-
-        return false;
-    }
-
-    // Special case handling for NaN. NaN is equal to NaN but
-    // otherwise always compares to false.
-    if (std::isnan(e.numberDouble()) || std::isnan(_rhs.numberDouble())) {
-        bool bothNaN = std::isnan(e.numberDouble()) && std::isnan(_rhs.numberDouble());
-        switch (matchType()) {
-            case LT:
-                return false;
-            case LTE:
-                return bothNaN;
-            case EQ:
-                return bothNaN;
-            case GT:
-                return false;
-            case GTE:
-                return bothNaN;
-            default:
-                // This is a comparison match expression, so it must be either
-                // a $lt, $lte, $gt, $gte, or equality expression.
-                fassertFailed(17448);
-        }
-    }
-
-    int x = compareElementValues(e, _rhs, _collator);
+	BSONType lType = e.getType();
+	BSONType rType = _rhs.getType();
+	
+	// handle edge cases with null & NaN :
+	// - null and NaN only EQ or GTE or LTE another null or NaN
+	// - null and NaN NE anything else than null or NaN
+	// - null and NaN are never GT or LT than anything
+	bool leftIsNull = false;
+	bool leftIsNumber = false;
+	bool leftIsNaN = false;
+	bool rightIsNull = false;
+	bool rightIsNumber = false;
+	bool rightIsNaN = false;
+	
+	switch(lType) {
+		case EOO:
+		case MinKey:
+		case MaxKey:
+		case Undefined:
+		case jstNULL: leftIsNull = true; break;
+		case NumberDouble:
+		case NumberInt:
+		case NumberLong:
+		case NumberDecimal: {
+			leftIsNumber = true; 
+			leftIsNaN = std::isnan(e.numberDouble());
+			break;
+		}
+		default: break;
+	}
+	
+	switch(rType) {
+		case EOO:
+		case MinKey:
+		case MaxKey:
+		case Undefined:
+		case jstNULL: rightIsNull = true; break;
+		case NumberDouble:
+		case NumberInt:
+		case NumberLong:
+		case NumberDecimal: {
+			rightIsNumber = true; 
+			rightIsNaN = std::isnan(_rhs.numberDouble());
+			break;
+		}
+		default: break;
+	}
+	
+	if( (rightIsNumber && lType == String) )
+	{
+		double number = 0;
+		if (parseNumberFromString<double>(e.valuestr(), &number).isOK())
+			leftIsNaN = std::isnan(number);
+		else
+			leftIsNaN = true;
+	}
+	
+	switch(matchType()) {
+		case GT:
+		case LT:
+			if( leftIsNull || leftIsNaN || rightIsNull || rightIsNaN ) return false;
+			break;
+		case EQ:
+		case GTE:
+		case LTE:
+			if( (leftIsNull || leftIsNaN) && (rightIsNull || rightIsNaN) ) return true;
+			if( leftIsNull || leftIsNaN || rightIsNull || rightIsNaN ) return false;
+			break;
+		case NE:
+			if( (leftIsNull || leftIsNaN) && (rightIsNull || rightIsNaN) ) return false;
+			if( leftIsNull || leftIsNaN || rightIsNull || rightIsNaN ) return true;
+			break;
+		default: break;
+	}
+	
+    int x = compareElementValuesImplicit(e, _rhs, _collator);
 
     switch (matchType()) {
         case LT:
