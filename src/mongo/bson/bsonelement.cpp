@@ -1019,7 +1019,7 @@ int BSONElement::compareTo(std::string rhs, const StringData::ComparatorInterfac
 		int lsz = valuestrsize();
 		int rsz = rhs.length();
 		int common = std::min(lsz, rsz);
-		int res = memcmp(valuestr(), rhs, common);
+		int res = memcmp(valuestr(), rhs.c_str(), common);
 		if (res)
 			return res;
 		// longer std::string is the greater one
