@@ -1012,14 +1012,14 @@ int compareElementValues(const BSONElement& l,
 
 int BSONElement::compareTo(std::string rhs, const StringData::ComparatorInterface* comparator) const {
 	if (comparator)
-		return comparator->compare(l.valueStringData(), StringData(rhs));
+		return comparator->compare(valueStringData(), StringData(rhs));
 	else
 	{
 		// we use memcmp as we allow zeros in UTF8 strings
-		int lsz = leftStr.valuestrsize();
+		int lsz = valuestrsize();
 		int rsz = rhs.length();
 		int common = std::min(lsz, rsz);
-		int res = memcmp(leftStr.valuestr(), rhs, common);
+		int res = memcmp(valuestr(), rhs, common);
 		if (res)
 			return res;
 		// longer std::string is the greater one
@@ -1032,7 +1032,7 @@ int BSONElement::compareTo(double rhs) const {
 		case NumberDouble:
 			return compareDoubles(_numberDouble(), rhs);
 		case NumberInt:
-			return compareIntToDouble(_numberInt(), rhs);
+			return compareDoubles(_numberInt(), rhs);
 		case NumberLong:
 			return compareLongToDouble(_numberLong(), rhs);
 		case NumberDecimal:
