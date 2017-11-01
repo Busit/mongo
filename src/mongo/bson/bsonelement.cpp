@@ -1040,6 +1040,7 @@ int BSONElement::compareTo(double rhs) const {
 		default:
 			chk(false);
 	}
+	return -1;
 }
 int BSONElement::compareTo(int rhs) const {
 	switch (type())
@@ -1055,6 +1056,7 @@ int BSONElement::compareTo(int rhs) const {
 		default:
 			chk(false);
 	}
+	return -1;
 }
 int BSONElement::compareTo(long long rhs) const {
 	switch (type())
@@ -1070,6 +1072,7 @@ int BSONElement::compareTo(long long rhs) const {
 		default:
 			chk(false);
 	}
+	return -1;
 }
 int BSONElement::compareTo(bool rhs) const {
 	return boolean() - rhs;
