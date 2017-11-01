@@ -1010,4 +1010,317 @@ int compareElementValues(const BSONElement& l,
     return -1;
 }
 
+int BSONElement::compareTo(std::string rhs, const StringData::ComparatorInterface* comparator) const {
+	if (comparator)
+		return comparator->compare(l.valueStringData(), StringData(rhs));
+	else
+	{
+		// we use memcmp as we allow zeros in UTF8 strings
+		int lsz = leftStr.valuestrsize();
+		int rsz = rhs.length();
+		int common = std::min(lsz, rsz);
+		int res = memcmp(leftStr.valuestr(), rhs, common);
+		if (res)
+			return res;
+		// longer std::string is the greater one
+		return lsz - rsz;
+	}
+}
+int BSONElement::compareTo(double rhs) const {
+	switch (type())
+	{
+		case NumberDouble:
+			return compareDoubles(_numberDouble(), rhs);
+		case NumberInt:
+			return compareIntToDouble(_numberInt(), rhs);
+		case NumberLong:
+			return compareLongToDouble(_numberLong(), rhs);
+		case NumberDecimal:
+			return compareDecimalToDouble(_numberDecimal(), rhs);
+		default:
+			chk(false);
+	}
+}
+int BSONElement::compareTo(int rhs) const {
+	switch (type())
+	{
+		case NumberDouble:
+			return compareDoubles(_numberDouble(), rhs);
+		case NumberInt:
+			return compareInts(_numberInt(), rhs);
+		case NumberLong:
+			return compareLongs(_numberLong(), rhs);
+		case NumberDecimal:
+			return compareDecimalToInt(_numberDecimal(), rhs);
+		default:
+			chk(false);
+	}
+}
+int BSONElement::compareTo(long long rhs) const {
+	switch (type())
+	{
+		case NumberDouble:
+			return compareDoubleToLong(_numberDouble(), rhs);
+		case NumberInt:
+			return compareLongs(_numberInt(), rhs);
+		case NumberLong:
+			return compareLongs(_numberLong(), rhs);
+		case NumberDecimal:
+			return compareDecimalToLong(_numberDecimal(), rhs);
+		default:
+			chk(false);
+	}
+}
+int BSONElement::compareTo(bool rhs) const {
+	return boolean() - rhs;
+}
+	
+int compareElementValuesImplicit(const BSONElement& l,
+                         const BSONElement& r,
+                         const StringData::ComparatorInterface* comparator) {
+	int ret = 0;
+	int typeCompare = -1;
+	if (l.type() > r.type()) typeCompare = 1;
+    else if (l.type() == r.type()) typeCompare = 0;
+	double number = 0;
+	
+	switch(l.type())
+	{
+		case EOO:
+        case Undefined:
+        case jstNULL:
+        case MaxKey:
+        case MinKey:
+		{
+			if (typeCompare) return typeCompare;
+			else return ret;
+		}
+		case Bool:
+		{
+			switch (r.type())
+			{
+				case Bool:
+					return *l.value() - *r.value();
+				case NumberDecimal:
+                case NumberInt:
+                case NumberLong:
+                case NumberDouble:
+					// TYPE AUTO CONVERSION : compare is left to right so convert l to number
+					return -1 * r.compareTo(l.boolean() ? 1 : 0);
+				case String:
+					// TYPE AUTO CONVERSION : compare is left to right so convert l to string
+					if( r.valuestrsize() == 1 )
+						return -1 * r.compareTo(l.boolean() ? "1" : "0", comparator);
+					else
+						return -1 * r.compareTo(l.boolean() ? "true" : "false", comparator);
+				default:
+					return typeCompare;
+			}
+		}
+		case bsonTimestamp:  // unsigned
+		{
+			if (typeCompare) return typeCompare;
+			else if (l.timestamp() < r.timestamp())
+                return -1;
+            return l.timestamp() == r.timestamp() ? 0 : 1;
+		}
+		case Date:  // signed
+		{
+			if (typeCompare) return typeCompare;
+			else
+			{
+                const Date_t a = l.Date();
+                const Date_t b = r.Date();
+                if (a < b)
+                    return -1;
+                return a == b ? 0 : 1;
+            }
+		}
+		case NumberInt:
+		{
+            switch (r.type())
+			{
+				case NumberInt:
+                    return compareInts(l._numberInt(), r._numberInt());
+                case NumberLong:
+                    return compareLongs(l._numberInt(), r._numberLong());
+                case NumberDouble:
+                    return compareDoubles(l._numberInt(), r._numberDouble());
+                case NumberDecimal:
+                    return compareIntToDecimal(l._numberInt(), r._numberDecimal());
+				case Bool: 
+					// TYPE AUTO CONVERSION : compare is left to right so convert l to bool
+					return -1 * r.compareTo(l._numberInt() > 0 ? true : false);
+				case String:
+					// TYPE AUTO CONVERSION : compare is left to right so convert l to string
+					return -1 * r.compareTo(l.toString(false, true), comparator);
+				default:
+					return typeCompare;
+            }
+        }
+        case NumberLong:
+		{
+            switch (r.type()) {
+                case NumberLong:
+                    return compareLongs(l._numberLong(), r._numberLong());
+                case NumberInt:
+                    return compareLongs(l._numberLong(), r._numberInt());
+                case NumberDouble:
+                    return compareLongToDouble(l._numberLong(), r._numberDouble());
+                case NumberDecimal:
+                    return compareLongToDecimal(l._numberLong(), r._numberDecimal());
+				case Bool: 
+					// TYPE AUTO CONVERSION : compare is left to right so convert l to bool
+					return -1 * r.compareTo(l._numberLong() > 0 ? true : false);
+				case String:
+					// TYPE AUTO CONVERSION : compare is left to right so convert l to string
+					return -1 * r.compareTo(l.toString(false, true), comparator);
+				default:
+					return typeCompare;
+            }
+        }
+        case NumberDouble:
+		{
+            switch (r.type()) {
+                case NumberDouble:
+                    return compareDoubles(l._numberDouble(), r._numberDouble());
+                case NumberInt:
+                    return compareDoubles(l._numberDouble(), r._numberInt());
+                case NumberLong:
+                    return compareDoubleToLong(l._numberDouble(), r._numberLong());
+                case NumberDecimal:
+                    return compareDoubleToDecimal(l._numberDouble(), r._numberDecimal());
+				case Bool: 
+					// TYPE AUTO CONVERSION : compare is left to right so convert l to bool
+					return -1 * r.compareTo(l._numberDouble() > 0.0 ? true : false);
+				case String:
+					// TYPE AUTO CONVERSION : compare is left to right so convert l to string
+					return -1 * r.compareTo(l.toString(false, true), comparator);
+				default:
+					return typeCompare;
+            }
+        }
+		case NumberDecimal:
+		{
+            switch (r.type()) {
+                case NumberDecimal:
+                    return compareDecimals(l._numberDecimal(), r._numberDecimal());
+                case NumberInt:
+                    return compareDecimalToInt(l._numberDecimal(), r._numberInt());
+                case NumberLong:
+                    return compareDecimalToLong(l._numberDecimal(), r._numberLong());
+                case NumberDouble:
+                    return compareDecimalToDouble(l._numberDecimal(), r._numberDouble());
+				case Bool: 
+					// TYPE AUTO CONVERSION : compare is left to right so convert l to bool
+					return -1 * r.compareTo(compareDecimalToInt(l._numberDecimal(), 0) > 0 ? true : false);
+				case String:
+					// TYPE AUTO CONVERSION : compare is left to right so convert l to string
+					return -1 * r.compareTo(l.toString(false, true), comparator);
+				default:
+					return typeCompare;
+            }
+        }
+		case jstOID:
+		{
+			if (typeCompare) return typeCompare;
+            return memcmp(l.value(), r.value(), OID::kOIDSize);
+		}
+        case Code:
+		{
+			if (typeCompare) return typeCompare;
+            return compareElementStringValues(l, r);
+		}
+        case Symbol:
+		{
+			if (typeCompare) return typeCompare;
+			if (comparator) {
+                return comparator->compare(l.valueStringData(), r.valueStringData());
+            } else {
+                return compareElementStringValues(l, r);
+            }
+		}
+		case String:
+		{
+			switch (r.type()) {
+                case NumberDouble:
+                case NumberInt:
+                case NumberLong:
+                case NumberDecimal:
+				{
+					// TYPE AUTO CONVERSION : compare is left to right so convert l to number
+					if (parseNumberFromString<double>(l.valuestr(), &number).isOK())
+						return -1 * r.compareTo(number);
+					else
+						return -1 * r.compareTo(std::nan("NaN"));
+				}
+				case Bool:
+				{
+					// TYPE AUTO CONVERSION : compare is left to right so convert r to string because it is easier than l to bool
+					if( l.valuestrsize() == 1 )
+						return l.compareTo(r.boolean() ? "1" : "0", comparator);
+					else
+						return l.compareTo(r.boolean() ? "true" : "false", comparator);
+				}
+				case String:
+				{
+					if (comparator)
+						return comparator->compare(l.valueStringData(), r.valueStringData());
+					else
+						return compareElementStringValues(l, r);
+				}
+				default:
+					return typeCompare;
+			}
+		}
+		case Object:
+        case Array:
+            // woCompare parameters: r, ordering, considerFieldName, comparator.
+            // r: the BSONObj to compare with.
+            // ordering: the sort directions for each key.
+            // considerFieldName: whether field names should be considered in comparison.
+            // comparator: used for all string comparisons, if non-null.
+			if (typeCompare) return typeCompare;
+            return l.embeddedObject().woCompare(r.embeddedObject(), BSONObj(), true, comparator);
+        case DBRef: {
+			if (typeCompare) return typeCompare;
+            int lsz = l.valuesize();
+            int rsz = r.valuesize();
+            if (lsz - rsz != 0)
+                return lsz - rsz;
+            return memcmp(l.value(), r.value(), lsz);
+        }
+        case BinData: {
+			if (typeCompare) return typeCompare;
+            int lsz = l.objsize();  // our bin data size in bytes, not including the subtype byte
+            int rsz = r.objsize();
+            if (lsz - rsz != 0)
+                return lsz - rsz;
+            return memcmp(l.value() + 4, r.value() + 4, lsz + 1 /*+1 for subtype byte*/);
+        }
+        case RegEx: {
+			if (typeCompare) return typeCompare;
+            int c = strcmp(l.regex(), r.regex());
+            if (c)
+                return c;
+            return strcmp(l.regexFlags(), r.regexFlags());
+        }
+        case CodeWScope: {
+			if (typeCompare) return typeCompare;
+            int cmp = StringData(l.codeWScopeCode(), l.codeWScopeCodeLen() - 1)
+                          .compare(StringData(r.codeWScopeCode(), r.codeWScopeCodeLen() - 1));
+            if (cmp)
+                return cmp;
+
+            // When comparing the scope object, we should consider field names. Special string
+            // comparison semantics do not apply to strings nested inside the CodeWScope scope
+            // object, so we do not pass through the string comparator.
+            return l.codeWScopeObject().woCompare(r.codeWScopeObject(), BSONObj(), true);
+        }
+        default:
+            verify(false);
+	}
+	return -1;
+}
+
 }  // namespace mongo
