@@ -63,6 +63,13 @@ int compareElementValues(const BSONElement& l,
                          const BSONElement& r,
                          const StringData::ComparatorInterface* comparator = nullptr);
 
+/** l and r will be compared using implicit type conversion for string, number and bool.
+    Note that the order of operands will determine the type of conversion and may not be commutative in some cases
+*/
+int compareElementValuesImplicit(const BSONElement& l,
+                         const BSONElement& r,
+                         const StringData::ComparatorInterface* comparator = nullptr);
+						 
 /** BSONElement represents an "element" in a BSONObj.  So for the object { a : 3, b : "abc" },
     'a : 3' is the first element (key+value).
 
