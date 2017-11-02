@@ -1069,7 +1069,7 @@ int BSONElement::compareTo(bool rhs) const {
 }
 
 std::string BSONElement::coerceToString() const {
-    switch (getType())
+    switch (type())
 	{
         case NumberDouble:
             return str::stream() << _numberDouble();
