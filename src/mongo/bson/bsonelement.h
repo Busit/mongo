@@ -664,6 +664,8 @@ public:
 
     template <typename T>
     bool coerce(T* out) const;
+	
+	std::string coerceToString() const;
 
 private:
     const char* data;
