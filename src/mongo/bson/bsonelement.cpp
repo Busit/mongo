@@ -1014,17 +1014,7 @@ int BSONElement::compareTo(std::string rhs, const StringData::ComparatorInterfac
 	if (comparator)
 		return comparator->compare(valueStringData(), StringData(rhs));
 	else
-	{
-		// we use memcmp as we allow zeros in UTF8 strings
-		int lsz = valuestrsize();
-		int rsz = rhs.length();
-		int common = std::min(lsz, rsz);
-		int res = memcmp(valuestr(), rhs.c_str(), common);
-		if (res)
-			return res;
-		// longer std::string is the greater one
-		return lsz - rsz;
-	}
+		return valueStringData().compare(StringData(rhs));
 }
 int BSONElement::compareTo(double rhs) const {
 	switch (type())
@@ -1076,6 +1066,46 @@ int BSONElement::compareTo(long long rhs) const {
 }
 int BSONElement::compareTo(bool rhs) const {
 	return boolean() - rhs;
+}
+
+std::string BSONElement::coerceToString() const {
+    switch (getType())
+	{
+        case NumberDouble:
+            return str::stream() << _numberDouble();
+
+        case NumberInt:
+            return str::stream() << _numberInt();
+
+        case NumberLong:
+            return str::stream() << _numberLong();
+
+        case NumberDecimal:
+            return str::stream() << _numberDecimal().toString();
+
+        case Code:
+        case Symbol:
+        case String:
+            return valueStringData().toString();
+
+        case bsonTimestamp:
+            return str::stream() << timestampTime().toMillisSinceEpoch();
+
+        case Date:
+            return str::stream() << date().toMillisSinceEpoch();
+
+        case EOO:
+        case jstNULL:
+        case Undefined:
+            return "";
+			
+		case Bool:
+			return boolean() ? "true" : "false";
+
+        default:
+			return "";
+    }
+	return "";
 }
 	
 int compareElementValuesImplicit(const BSONElement& l,
@@ -1156,7 +1186,7 @@ int compareElementValuesImplicit(const BSONElement& l,
 					return -1 * r.compareTo(l._numberInt() > 0 ? true : false);
 				case String:
 					// TYPE AUTO CONVERSION : compare is left to right so convert l to string
-					return -1 * r.compareTo(l.toString(false, true), comparator);
+					return -1 * r.compareTo(l.coerceToString(), comparator);
 				default:
 					return typeCompare;
             }
@@ -1177,7 +1207,7 @@ int compareElementValuesImplicit(const BSONElement& l,
 					return -1 * r.compareTo(l._numberLong() > 0 ? true : false);
 				case String:
 					// TYPE AUTO CONVERSION : compare is left to right so convert l to string
-					return -1 * r.compareTo(l.toString(false, true), comparator);
+					return -1 * r.compareTo(l.coerceToString(), comparator);
 				default:
 					return typeCompare;
             }
@@ -1198,7 +1228,7 @@ int compareElementValuesImplicit(const BSONElement& l,
 					return -1 * r.compareTo(l._numberDouble() > 0.0 ? true : false);
 				case String:
 					// TYPE AUTO CONVERSION : compare is left to right so convert l to string
-					return -1 * r.compareTo(l.toString(false, true), comparator);
+					return -1 * r.compareTo(l.coerceToString(), comparator);
 				default:
 					return typeCompare;
             }
@@ -1219,7 +1249,7 @@ int compareElementValuesImplicit(const BSONElement& l,
 					return -1 * r.compareTo(compareDecimalToInt(l._numberDecimal(), 0) > 0 ? true : false);
 				case String:
 					// TYPE AUTO CONVERSION : compare is left to right so convert l to string
-					return -1 * r.compareTo(l.toString(false, true), comparator);
+					return -1 * r.compareTo(l.coerceToString(), comparator);
 				default:
 					return typeCompare;
             }
