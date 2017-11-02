@@ -1085,13 +1085,13 @@ std::string BSONElement::coerceToString() const {
 
         case Code:
         case Symbol:
-        case String:
+        case mongo::String:
             return valueStringData().toString();
 
         case bsonTimestamp:
             return str::stream() << timestampTime().toMillisSinceEpoch();
 
-        case Date:
+        case mongo::Date:
             return str::stream() << date().toMillisSinceEpoch();
 
         case EOO:
@@ -1099,7 +1099,7 @@ std::string BSONElement::coerceToString() const {
         case Undefined:
             return "";
 			
-		case Bool:
+		case mongo::Bool:
 			return boolean() ? "true" : "false";
 
         default:
