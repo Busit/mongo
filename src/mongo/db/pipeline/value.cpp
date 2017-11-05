@@ -438,7 +438,6 @@ bool Value::coerceToBool() const {
         case DBRef:
         case Code:
         case MaxKey:
-        case String:
         case Object:
         case Array:
         case BinData:
@@ -448,6 +447,15 @@ bool Value::coerceToBool() const {
         case Symbol:
         case bsonTimestamp:
             return true;
+			
+		case String:
+		{
+			if( getString().length() == 1 && getStringData().compare(StringData("1")) == 0 )
+				return true;
+			else if( getStringData().compare(StringData("true")) == 0 )
+				return true;
+			return false;
+		}
 
         case EOO:
         case jstNULL:
@@ -482,6 +490,18 @@ int Value::coerceToInt() const {
         case NumberDecimal:
             return (_storage.getDecimal()).toInt();
 
+		case Bool:
+			return (getBool() ? 1 : 0);
+		
+		case String:
+		{
+			double number = 0;
+			if (parseNumberFromString<double>(coerceToString(), &number).isOK())
+				return static_cast<int>(number);
+			else
+				return std::nan("NaN");
+		}
+		
         default:
             uassert(16003,
                     str::stream() << "can't convert from BSON type " << typeName(getType())
@@ -503,6 +523,18 @@ long long Value::coerceToLong() const {
 
         case NumberDecimal:
             return (_storage.getDecimal()).toLong();
+		
+		case Bool:
+			return (getBool() ? 1LL : 0LL);
+		
+		case String:
+		{
+			double number = 0;
+			if (parseNumberFromString<double>(coerceToString(), &number).isOK())
+				return static_cast<long long>(number);
+			else
+				return std::nan("NaN");
+		}
 
         default:
             uassert(16004,
@@ -526,6 +558,18 @@ double Value::coerceToDouble() const {
         case NumberDecimal:
             return (_storage.getDecimal()).toDouble();
 
+		case Bool:
+			return (getBool() ? 1.0 : 0.0);
+		
+		case String:
+		{
+			double number = 0;
+			if (parseNumberFromString<double>(coerceToString(), &number).isOK())
+				return number;
+			else
+				return std::nan("NaN");
+		}
+		
         default:
             uassert(16005,
                     str::stream() << "can't convert from BSON type " << typeName(getType())
@@ -548,6 +592,18 @@ Decimal128 Value::coerceToDecimal() const {
         case NumberDouble:
             return Decimal128(_storage.doubleValue);
 
+		case Bool:
+			return (getBool() ? Decimal128(static_cast<int32_t>(1)) : Decimal128(static_cast<int32_t>(0)));
+		
+		case String:
+		{
+			double number = 0;
+			if (parseNumberFromString<double>(coerceToString(), &number).isOK())
+				return Decimal128(number);
+			else
+				return Decimal128(std::nan("NaN"));
+		}
+		
         default:
             uassert(16008,
                     str::stream() << "can't convert from BSON type " << typeName(getType())
@@ -571,7 +627,7 @@ long long Value::coerceToDate() const {
 		case String:
 		{
 			double number = 0;
-			if (parseNumberFromString<double>(pNumber.coerceToString(), &number).isOK())
+			if (parseNumberFromString<double>(coerceToString(), &number).isOK())
 			{
 				v = static_cast<long long> number;
 				if( v < 9000000000LL ) // assume it was in seconds
