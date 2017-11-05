@@ -442,12 +442,19 @@ bool Value::coerceToBool() const {
         case Array:
         case BinData:
         case jstOID:
-        case Date:
         case RegEx:
         case Symbol:
         case bsonTimestamp:
             return true;
-			
+		
+		case Date:
+		{
+			if( getDate() == 0LL )
+				return false;
+			else
+				return true;
+		}
+		
 		case String:
 		{
 			if( getString().length() == 1 && getStringData().compare(StringData("1")) == 0 )
@@ -499,14 +506,18 @@ int Value::coerceToInt() const {
 			if (parseNumberFromString<double>(coerceToString(), &number).isOK())
 				return static_cast<int>(number);
 			else
-				return std::nan("NaN");
+				return 0;
 		}
 		
+		case Date:
+            return static_cast<int>(getDate());
+		
         default:
-            uassert(16003,
-                    str::stream() << "can't convert from BSON type " << typeName(getType())
-                                  << " to int",
-                    false);
+			return 0;
+//            uassert(16003,
+//                    str::stream() << "can't convert from BSON type " << typeName(getType())
+//                                  << " to int",
+//                    false);
     }  // switch(getType())
 }
 
@@ -533,14 +544,18 @@ long long Value::coerceToLong() const {
 			if (parseNumberFromString<double>(coerceToString(), &number).isOK())
 				return static_cast<long long>(number);
 			else
-				return std::nan("NaN");
+				return 0LL;
 		}
+		
+		case Date:
+            return getDate();
 
         default:
-            uassert(16004,
-                    str::stream() << "can't convert from BSON type " << typeName(getType())
-                                  << " to long",
-                    false);
+			return 0LL;
+//            uassert(16004,
+//                    str::stream() << "can't convert from BSON type " << typeName(getType())
+//                                  << " to long",
+//                    false);
     }  // switch(getType())
 }
 
@@ -563,18 +578,22 @@ double Value::coerceToDouble() const {
 		
 		case String:
 		{
-			double number = 0;
+			double number = 0.0;
 			if (parseNumberFromString<double>(coerceToString(), &number).isOK())
 				return number;
 			else
-				return std::nan("NaN");
+				return 0.0;
 		}
 		
+		case Date:
+            return static_cast<double>(getDate());
+		
         default:
-            uassert(16005,
-                    str::stream() << "can't convert from BSON type " << typeName(getType())
-                                  << " to double",
-                    false);
+			return 0.0;
+//            uassert(16005,
+//                    str::stream() << "can't convert from BSON type " << typeName(getType())
+//                                  << " to double",
+//                    false);
     }  // switch(getType())
 }
 
@@ -601,14 +620,18 @@ Decimal128 Value::coerceToDecimal() const {
 			if (parseNumberFromString<double>(coerceToString(), &number).isOK())
 				return Decimal128(number);
 			else
-				return Decimal128(std::nan("NaN"));
+				return Decimal128(0.0);
 		}
 		
+		case Date:
+            return Decimal128(static_cast<int64_t>(getDate()));
+		
         default:
-            uassert(16008,
-                    str::stream() << "can't convert from BSON type " << typeName(getType())
-                                  << " to decimal",
-                    false);
+			return Decimal128(0.0);
+//            uassert(16008,
+//                    str::stream() << "can't convert from BSON type " << typeName(getType())
+//                                  << " to decimal",
+//                    false);
     }  // switch(getType())
 }
 
@@ -616,6 +639,8 @@ long long Value::coerceToDate() const {
 	long long v = 0LL;
 	if( numeric() )
 	{
+		if( std::isnan(coerceToDouble()) )
+			return 0LL;
 		v = coerceToLong();
 		if( v < 9000000000LL ) // assume it was in seconds
 			return v * 1000LL;
@@ -638,6 +663,10 @@ long long Value::coerceToDate() const {
 			else
 				return 0LL;
 		}
+		
+		case Bool:
+			return (getBool() ? 1LL : 0LL);
+			
         case Date:
             return getDate();
 
@@ -750,10 +779,11 @@ Timestamp Value::coerceToTimestamp() const {
             return getTimestamp();
 
         default:
-            uassert(16378,
-                    str::stream() << "can't convert from BSON type " << typeName(getType())
-                                  << " to timestamp",
-                    false);
+			return Timestamp(coerceToDate());
+//            uassert(16378,
+//                    str::stream() << "can't convert from BSON type " << typeName(getType())
+//                                  << " to timestamp",
+//                    false);
     }  // switch(getType())
 }
 
