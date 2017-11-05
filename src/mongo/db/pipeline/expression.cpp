@@ -4003,6 +4003,42 @@ const char* ExpressionToNumber::getOpName() const {
     return "$toNumber";
 }
 
+/* ------------------------- ExpressionToDate -------------------------- */
+
+Value ExpressionToDate::evaluateInternal(Variables* vars) const {
+	Value pDate(vpOperand[0]->evaluateInternal(vars));
+	switch (pDate.getType())
+	{
+		case Date:
+			return pDate;
+		default:
+			return Value(Date_t::fromMillisSinceEpoch(coerceToDate()));
+	}
+}
+
+REGISTER_EXPRESSION(toDate, ExpressionToDate::parse);
+const char* ExpressionToDate::getOpName() const {
+    return "$toDate";
+}
+
+/* ------------------------- ExpressionToBool -------------------------- */
+
+Value ExpressionToBool::evaluateInternal(Variables* vars) const {
+	Value pBool(vpOperand[0]->evaluateInternal(vars));
+	switch (pBool.getType())
+	{
+		case Bool:
+			return pBool;
+		default:
+			return Value(coerceToBool());
+	}
+}
+
+REGISTER_EXPRESSION(toBool, ExpressionToBool::parse);
+const char* ExpressionToBool::getOpName() const {
+    return "$toBool";
+}
+
 /* ------------------------- ExpressionNaN -------------------------- */
 
 Value ExpressionNaN::evaluateInternal(Variables* vars) const {
