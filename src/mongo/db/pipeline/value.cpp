@@ -557,7 +557,31 @@ Decimal128 Value::coerceToDecimal() const {
 }
 
 long long Value::coerceToDate() const {
+	long long v = 0LL;
+	if( numeric() )
+	{
+		v = coerceToLong();
+		if( v < 9000000000LL ) // assume it was in seconds
+			return v * 1000LL;
+		else
+			return v;
+	}
+	
     switch (getType()) {
+		case String:
+		{
+			double number = 0;
+			if (parseNumberFromString<double>(pNumber.coerceToString(), &number).isOK())
+			{
+				v = static_cast<long long> number;
+				if( v < 9000000000LL ) // assume it was in seconds
+					return v * 1000LL;
+				else
+					return v;
+			}
+			else
+				return 0LL;
+		}
         case Date:
             return getDate();
 
