@@ -629,7 +629,7 @@ long long Value::coerceToDate() const {
 			double number = 0;
 			if (parseNumberFromString<double>(coerceToString(), &number).isOK())
 			{
-				v = static_cast<long long> number;
+				v = static_cast<long long>(number);
 				if( v < 9000000000LL ) // assume it was in seconds
 					return v * 1000LL;
 				else
