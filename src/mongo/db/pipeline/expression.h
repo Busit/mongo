@@ -1576,6 +1576,26 @@ public:
 };
 
 
+class ExpressionToDate final : public ExpressionFixedArity<ExpressionToDate, 1> {
+public:
+    explicit ExpressionToDate(const boost::intrusive_ptr<ExpressionContext>& expCtx)
+        : ExpressionFixedArity<ExpressionToDate, 1>(expCtx) {}
+
+    Value evaluateInternal(Variables* vars) const final;
+    const char* getOpName() const final;
+};
+
+
+class ExpressionToBool final : public ExpressionFixedArity<ExpressionToBool, 1> {
+public:
+    explicit ExpressionToBool(const boost::intrusive_ptr<ExpressionContext>& expCtx)
+        : ExpressionFixedArity<ExpressionToBool, 1>(expCtx) {}
+
+    Value evaluateInternal(Variables* vars) const final;
+    const char* getOpName() const final;
+};
+
+
 class ExpressionNaN final : public ExpressionFixedArity<ExpressionNaN, 1> {
 public:
     explicit ExpressionNaN(const boost::intrusive_ptr<ExpressionContext>& expCtx)
