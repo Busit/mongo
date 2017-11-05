@@ -674,10 +674,11 @@ long long Value::coerceToDate() const {
             return getTimestamp().getSecs() * 1000LL;
 
         default:
-            uassert(16006,
-                    str::stream() << "can't convert from BSON type " << typeName(getType())
-                                  << " to Date",
-                    false);
+			return 0LL;
+//            uassert(16006,
+//                    str::stream() << "can't convert from BSON type " << typeName(getType())
+//                                  << " to Date",
+//                    false);
     }  // switch(getType())
 }
 
