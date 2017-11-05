@@ -4012,7 +4012,7 @@ Value ExpressionToDate::evaluateInternal(Variables* vars) const {
 		case Date:
 			return pDate;
 		default:
-			return Value(Date_t::fromMillisSinceEpoch(coerceToDate()));
+			return Value(Date_t::fromMillisSinceEpoch(pDate.coerceToDate()));
 	}
 }
 
@@ -4030,7 +4030,7 @@ Value ExpressionToBool::evaluateInternal(Variables* vars) const {
 		case Bool:
 			return pBool;
 		default:
-			return Value(coerceToBool());
+			return Value(pBool.coerceToBool());
 	}
 }
 
