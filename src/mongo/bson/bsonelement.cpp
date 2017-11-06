@@ -881,7 +881,7 @@ int compareElementValues(const BSONElement& l,
             if (l.timestamp() < r.timestamp())
                 return -1;
             return l.timestamp() == r.timestamp() ? 0 : 1;
-        case Date:
+        case mongo::Date:
             // Signed comparisons for Dates.
             {
                 const Date_t a = l.Date();
@@ -1027,7 +1027,7 @@ int BSONElement::compareTo(double rhs) const {
 			return compareLongToDouble(_numberLong(), rhs);
 		case NumberDecimal:
 			return compareDecimalToDouble(_numberDecimal(), rhs);
-		case Date:
+		case mongo::Date:
 			return compareLongToDouble(date().toMillisSinceEpoch(), rhs);
 		default:
 			chk(false);
@@ -1045,7 +1045,7 @@ int BSONElement::compareTo(int rhs) const {
 			return compareLongs(_numberLong(), rhs);
 		case NumberDecimal:
 			return compareDecimalToInt(_numberDecimal(), rhs);
-		case Date:
+		case mongo::Date:
 			return compareLongs(date().toMillisSinceEpoch(), rhs);
 		default:
 			chk(false);
@@ -1063,7 +1063,7 @@ int BSONElement::compareTo(long long rhs) const {
 			return compareLongs(_numberLong(), rhs);
 		case NumberDecimal:
 			return compareDecimalToLong(_numberDecimal(), rhs);
-		case Date:
+		case mongo::Date:
 			return compareLongs(date().toMillisSinceEpoch(), rhs);
 		default:
 			chk(false);
@@ -1152,7 +1152,7 @@ int compareElementValuesImplicit(const BSONElement& l,
 						return -1 * r.compareTo(l.boolean() ? "1" : "0", comparator);
 					else
 						return -1 * r.compareTo(l.boolean() ? "true" : "false", comparator);
-				case Date:
+				case mongo::Date:
 					return -1 * r.compareTo(l.boolean() ? 1 : 0);
 				default:
 					return typeCompare;
@@ -1165,7 +1165,7 @@ int compareElementValuesImplicit(const BSONElement& l,
                 return -1;
             return l.timestamp() == r.timestamp() ? 0 : 1;
 		}
-		case Date:  // signed
+		case mongo::Date:  // signed
 		{
 			switch (r.type())
 			{
@@ -1183,7 +1183,7 @@ int compareElementValuesImplicit(const BSONElement& l,
 						return compareLongToDouble(l.date().toMillisSinceEpoch(), number);
 					// TYPE AUTO CONVERSION : otherwise convert date as string
 					return StringData(l.coerceToString()).compare(r.valueStringData());
-				case Date:
+				case mongo::Date:
 				{
 					const Date_t a = l.Date();
 					const Date_t b = r.Date();
@@ -1213,7 +1213,7 @@ int compareElementValuesImplicit(const BSONElement& l,
 				case String:
 					// TYPE AUTO CONVERSION : compare is left to right so convert l to string
 					return -1 * r.compareTo(l.coerceToString(), comparator);
-				case Date:
+				case mongo::Date:
 					// TYPE AUTO CONVERSION : date to long
 					return compareLongs(l._numberInt(), r.date().toMillisSinceEpoch());
 				default:
@@ -1237,7 +1237,7 @@ int compareElementValuesImplicit(const BSONElement& l,
 				case String:
 					// TYPE AUTO CONVERSION : compare is left to right so convert l to string
 					return -1 * r.compareTo(l.coerceToString(), comparator);
-				case Date:
+				case mongo::Date:
 					// TYPE AUTO CONVERSION : date to long
 					return compareLongs(l._numberLong(), r.date().toMillisSinceEpoch());
 				default:
@@ -1261,7 +1261,7 @@ int compareElementValuesImplicit(const BSONElement& l,
 				case String:
 					// TYPE AUTO CONVERSION : compare is left to right so convert l to string
 					return -1 * r.compareTo(l.coerceToString(), comparator);
-				case Date:
+				case mongo::Date:
 					// TYPE AUTO CONVERSION : date to long
 					return compareDoubleToLong(l._numberDouble(), r.date().toMillisSinceEpoch());
 				default:
@@ -1285,7 +1285,7 @@ int compareElementValuesImplicit(const BSONElement& l,
 				case String:
 					// TYPE AUTO CONVERSION : compare is left to right so convert l to string
 					return -1 * r.compareTo(l.coerceToString(), comparator);
-				case Date:
+				case mongo::Date:
 					// TYPE AUTO CONVERSION : date to long
 					return compareDecimalToLong(l._numberDecimal(), r.date().toMillisSinceEpoch());
 				default:
@@ -1340,7 +1340,7 @@ int compareElementValuesImplicit(const BSONElement& l,
 					else
 						return compareElementStringValues(l, r);
 				}
-				case Date:
+				case mongo::Date:
 				{
 					// TYPE AUTO CONVERSION : first try both as number
 					if (parseNumberFromString<double>(l.valuestr(), &number).isOK() && !std::isnan(number))
