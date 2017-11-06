@@ -3975,7 +3975,24 @@ const char* ExpressionToString::getOpName() const {
 /* ------------------------- ExpressionToNumber -------------------------- */
 
 Value ExpressionToNumber::evaluateInternal(Variables* vars) const {
+	const size_t n = vpOperand.size();
+	bool use_nan = true;
+	int base = 10;
+	
 	Value pNumber(vpOperand[0]->evaluateInternal(vars));
+	if( n >= 2 )
+	{
+		Value arg2(vpOperand[1]->evaluateInternal(vars));
+		if( arg2.getType() == Bool ) use_nan = arg2.getBool();
+		else if( arg2.numeric() ) base = arg2.coerceToInt();
+	}
+	if( n == 3 )
+	{
+		Value arg3(vpOperand[2]->evaluateInternal(vars));
+		if( arg3.getType() == Bool ) use_nan = arg3.getBool();
+		else if( arg3.numeric() ) base = arg3.coerceToInt();
+	}
+	
 	switch (pNumber.getType())
 	{
 		case NumberDouble:
@@ -3986,17 +4003,28 @@ Value ExpressionToNumber::evaluateInternal(Variables* vars) const {
 		case EOO:
         case jstNULL:
         case Undefined:
-            return Value(std::nan("NaN"));
+            return (use_nan ? Value(std::nan("NaN")) : Value(0));
 		case Bool:
 			return Value(pNumber.getBool() ? 1 : 0);
 		case Date:
 			return Value(pNumber.getDate());
 		default:
-			double number = 0;
-			if (parseNumberFromString<double>(pNumber.coerceToString(), &number).isOK())
-				return Value(number);
+			if( base != 10 )
+			{
+				long long numberLong = 0;
+				if( parseNumberFromStringWithBase<long long>(pNumber.coerceToString(), base, &numberLong).isOK() )
+					return Value(numberLong);
+				else
+					return (use_nan ? Value(std::nan("NaN")) : Value(0));
+			}
 			else
-				return Value(std::nan("NaN"));
+			{
+				double number = 0;
+				if (parseNumberFromString<double>(pNumber.coerceToString(), &number).isOK())
+					return Value(number);
+				else
+					return (use_nan ? Value(std::nan("NaN")) : Value(0));
+			}
 	}
 }
 
