@@ -843,6 +843,9 @@ int Value::compare(const Value& rL,
 						return Value::compare(Value(rL.getBool() ? "1" : "0"), rR, stringComparator);
 					else
 						return Value::compare(Value(rL.getBool() ? "true" : "false"), rR, stringComparator);
+				case Date:
+					// TYPE AUTO CONVERSION : compare is left to right so convert rL to number and rR to number too
+					return Value::compare(Value(rL.getBool() ? 1LL : 0LL), Value(rR.getDate()), stringComparator);
 				default:
 					return typeCompare;
 			}
@@ -855,8 +858,29 @@ int Value::compare(const Value& rL,
 
         case Date:  // signed
 		{
-			if (typeCompare) return typeCompare;
-			else return cmp(rL._storage.dateValue, rR._storage.dateValue);
+			switch (rType) {
+				case Bool:
+					return Value::compare(Value(rL.getDate()), Value(rR.getBool() ? 1LL : 0LL), stringComparator);
+				case NumberDecimal:
+                case NumberInt:
+                case NumberLong:
+                case NumberDouble:
+					// TYPE AUTO CONVERSION : compare is left to right so convert rL to number
+					return Value::compare(Value(rL.getDate()), rR, stringComparator);
+				case String:
+					// TYPE AUTO CONVERSION : first try both as number
+					if (parseNumberFromString<double>(rR.coerceToString(), &number).isOK() && !std::isnan(number))
+						return compareLongToDouble(rL.getDate(), number);
+					// TYPE AUTO CONVERSION : otherwise convert date as string
+					if (!stringComparator)
+						return StringData(rL.coerceToString()).compare(rR.getStringData());
+					else
+						return stringComparator->compare(StringData(rL.coerceToString()), rR.getStringData());
+				case Date:
+					return cmp(rL._storage.dateValue, rR._storage.dateValue);
+				default:
+					return typeCompare;
+			}
 		}
 
         // Numbers should compare by equivalence even if different types
@@ -878,6 +902,9 @@ int Value::compare(const Value& rL,
 				case String:
 					// TYPE AUTO CONVERSION : compare is left to right so convert rL to string
 					return Value::compare(Value(rL.coerceToString()), rR, stringComparator);
+				case Date:
+					// TYPE AUTO CONVERSION : date to long
+					return compareDecimalToLong(rL._storage.getDecimal(), rR.getDate());
 				default:
 					return typeCompare;
             }
@@ -901,6 +928,9 @@ int Value::compare(const Value& rL,
 				case String:
 					// TYPE AUTO CONVERSION : compare is left to right so convert rL to string
 					return Value::compare(Value(rL.coerceToString()), rR, stringComparator);
+				case Date:
+					// TYPE AUTO CONVERSION : date to long
+					return compareLongs(rL._storage.intValue, rR.getDate());
 				default:
 					return typeCompare;
             }
@@ -922,6 +952,9 @@ int Value::compare(const Value& rL,
 				case String:
 					// TYPE AUTO CONVERSION : compare is left to right so convert rL to string
 					return Value::compare(Value(rL.coerceToString()), rR, stringComparator);
+				case Date:
+					// TYPE AUTO CONVERSION : date to long
+					return compareLongs(rL._storage.longValue, rR.getDate());
 				default:
 					return typeCompare;
             }
@@ -944,6 +977,9 @@ int Value::compare(const Value& rL,
 				case String:
 					// TYPE AUTO CONVERSION : compare is left to right so convert rL to string
 					return Value::compare(Value(rL.coerceToString()), rR, stringComparator);
+				case Date:
+					// TYPE AUTO CONVERSION : date to long
+					return compareDoubleToLong(rL._storage.doubleValue, rR.getDate());
 				default:
 					return typeCompare;
             }
@@ -979,6 +1015,15 @@ int Value::compare(const Value& rL,
 					else
 						return stringComparator->compare(rL.getStringData(), rR.getStringData());
 				}
+				case Date:
+					// TYPE AUTO CONVERSION : first try both as number
+					if (parseNumberFromString<double>(rL.coerceToString(), &number).isOK() && !std::isnan(number))
+						return compareDoubleToLong(number, rR.getDate());
+					// TYPE AUTO CONVERSION : otherwise convert date as string
+					if (!stringComparator)
+						return rL.getStringData().compare(StringData(rR.coerceToString()));
+					else
+						return stringComparator->compare(rL.getStringData(), StringData(rR.coerceToString()));
 				default:
 					return typeCompare;
 			}
