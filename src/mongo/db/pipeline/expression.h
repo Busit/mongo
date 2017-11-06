@@ -484,6 +484,8 @@ public:
         Value arg = this->vpOperand[0]->evaluateInternal(vars);
         if (arg.nullish())
             return Value(BSONNULL);
+		if( !arg.numeric() )
+			return evaluateNumericArg(Value(arg.coerceToDouble()));
 
         uassert(28765,
                 str::stream() << this->getOpName() << " only supports numeric types, not "
@@ -1566,10 +1568,10 @@ public:
 };
 
 
-class ExpressionToNumber final : public ExpressionFixedArity<ExpressionToNumber, 1> {
+class ExpressionToNumber final : public ExpressionRangedArity<ExpressionToNumber, 1, 3> {
 public:
     explicit ExpressionToNumber(const boost::intrusive_ptr<ExpressionContext>& expCtx)
-        : ExpressionFixedArity<ExpressionToNumber, 1>(expCtx) {}
+        : ExpressionRangedArity<ExpressionToNumber, 1, 3>(expCtx) {}
 
     Value evaluateInternal(Variables* vars) const final;
     const char* getOpName() const final;
