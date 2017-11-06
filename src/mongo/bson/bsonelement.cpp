@@ -1027,6 +1027,8 @@ int BSONElement::compareTo(double rhs) const {
 			return compareLongToDouble(_numberLong(), rhs);
 		case NumberDecimal:
 			return compareDecimalToDouble(_numberDecimal(), rhs);
+		case Date:
+			return compareLongToDouble(date().toMillisSinceEpoch(), rhs);
 		default:
 			chk(false);
 	}
@@ -1043,6 +1045,8 @@ int BSONElement::compareTo(int rhs) const {
 			return compareLongs(_numberLong(), rhs);
 		case NumberDecimal:
 			return compareDecimalToInt(_numberDecimal(), rhs);
+		case Date:
+			return compareLongs(date().toMillisSinceEpoch(), rhs);
 		default:
 			chk(false);
 	}
@@ -1059,6 +1063,8 @@ int BSONElement::compareTo(long long rhs) const {
 			return compareLongs(_numberLong(), rhs);
 		case NumberDecimal:
 			return compareDecimalToLong(_numberDecimal(), rhs);
+		case Date:
+			return compareLongs(date().toMillisSinceEpoch(), rhs);
 		default:
 			chk(false);
 	}
@@ -1092,7 +1098,7 @@ std::string BSONElement::coerceToString() const {
             return str::stream() << timestampTime().toMillisSinceEpoch();
 
         case mongo::Date:
-            return str::stream() << date().toMillisSinceEpoch();
+			return str::stream() << date().toMillisSinceEpoch();
 
         case EOO:
         case jstNULL:
@@ -1146,6 +1152,8 @@ int compareElementValuesImplicit(const BSONElement& l,
 						return -1 * r.compareTo(l.boolean() ? "1" : "0", comparator);
 					else
 						return -1 * r.compareTo(l.boolean() ? "true" : "false", comparator);
+				case Date:
+					return -1 * r.compareTo(l.boolean() ? 1 : 0);
 				default:
 					return typeCompare;
 			}
@@ -1159,15 +1167,33 @@ int compareElementValuesImplicit(const BSONElement& l,
 		}
 		case Date:  // signed
 		{
-			if (typeCompare) return typeCompare;
-			else
+			switch (r.type())
 			{
-                const Date_t a = l.Date();
-                const Date_t b = r.Date();
-                if (a < b)
-                    return -1;
-                return a == b ? 0 : 1;
-            }
+				case Bool:
+					return l.compareTo(r.boolean() ? 1 : 0);
+				case NumberDecimal:
+                case NumberInt:
+                case NumberLong:
+                case NumberDouble:
+					// TYPE AUTO CONVERSION : compare is left to right so convert l to number
+					return -1 * r.compareTo(l.date().toMillisSinceEpoch());
+				case String:
+					// TYPE AUTO CONVERSION : first try both as number
+					if (parseNumberFromString<double>(r.valuestr(), &number).isOK() && !std::isnan(number))
+						return compareLongToDouble(l.date().toMillisSinceEpoch(), number);
+					// TYPE AUTO CONVERSION : otherwise convert date as string
+					return StringData(l.coerceToString()).compare(r.valueStringData());
+				case Date:
+				{
+					const Date_t a = l.Date();
+					const Date_t b = r.Date();
+					if (a < b)
+						return -1;
+					return a == b ? 0 : 1;
+				}
+				default:
+					return typeCompare;
+			}
 		}
 		case NumberInt:
 		{
@@ -1187,6 +1213,9 @@ int compareElementValuesImplicit(const BSONElement& l,
 				case String:
 					// TYPE AUTO CONVERSION : compare is left to right so convert l to string
 					return -1 * r.compareTo(l.coerceToString(), comparator);
+				case Date:
+					// TYPE AUTO CONVERSION : date to long
+					return compareLongs(l._numberInt(), r.date().toMillisSinceEpoch());
 				default:
 					return typeCompare;
             }
@@ -1208,6 +1237,9 @@ int compareElementValuesImplicit(const BSONElement& l,
 				case String:
 					// TYPE AUTO CONVERSION : compare is left to right so convert l to string
 					return -1 * r.compareTo(l.coerceToString(), comparator);
+				case Date:
+					// TYPE AUTO CONVERSION : date to long
+					return compareLongs(l._numberLong(), r.date().toMillisSinceEpoch());
 				default:
 					return typeCompare;
             }
@@ -1229,6 +1261,9 @@ int compareElementValuesImplicit(const BSONElement& l,
 				case String:
 					// TYPE AUTO CONVERSION : compare is left to right so convert l to string
 					return -1 * r.compareTo(l.coerceToString(), comparator);
+				case Date:
+					// TYPE AUTO CONVERSION : date to long
+					return compareDoubleToLong(l._numberDouble(), r.date().toMillisSinceEpoch());
 				default:
 					return typeCompare;
             }
@@ -1250,6 +1285,9 @@ int compareElementValuesImplicit(const BSONElement& l,
 				case String:
 					// TYPE AUTO CONVERSION : compare is left to right so convert l to string
 					return -1 * r.compareTo(l.coerceToString(), comparator);
+				case Date:
+					// TYPE AUTO CONVERSION : date to long
+					return compareDecimalToLong(l._numberDecimal(), r.date().toMillisSinceEpoch());
 				default:
 					return typeCompare;
             }
@@ -1301,6 +1339,14 @@ int compareElementValuesImplicit(const BSONElement& l,
 						return comparator->compare(l.valueStringData(), r.valueStringData());
 					else
 						return compareElementStringValues(l, r);
+				}
+				case Date:
+				{
+					// TYPE AUTO CONVERSION : first try both as number
+					if (parseNumberFromString<double>(l.valuestr(), &number).isOK() && !std::isnan(number))
+						return compareDoubleToLong(number, r.date().toMillisSinceEpoch());
+					// TYPE AUTO CONVERSION : otherwise convert date as string
+					return l.valueStringData().compare(StringData(r.coerceToString()));
 				}
 				default:
 					return typeCompare;
