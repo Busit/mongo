@@ -3996,6 +3996,10 @@ Value ExpressionToNumber::evaluateInternal(Variables* vars) const {
 	switch (pNumber.getType())
 	{
 		case NumberDouble:
+			if( !use_nan && std::isnan(pNumber.getDouble()) )
+				return Value(0.0);
+			else
+				return pNumber;
         case NumberInt:
         case NumberLong:
         case NumberDecimal:
