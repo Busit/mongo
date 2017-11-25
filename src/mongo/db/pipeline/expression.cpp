@@ -4083,7 +4083,7 @@ Value ExpressionRoundDate::evaluateInternal(Variables* vars) const {
                           << mode, false);
 	}
 	
-	return Value(mktime(time));
+	return Value(mktime(&time));
 }
 
 REGISTER_EXPRESSION(roundDate, ExpressionRoundDate::parse);
