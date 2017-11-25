@@ -4069,12 +4069,12 @@ Value ExpressionRoundDate::evaluateInternal(Variables* vars) const {
 	
 	tm time = pDate.coerceToTm();
 	StringData mode = pMode.getStringData();
-	if( mode == "minute" ) { tm.tm_sec = 0; }
-	else if( mode == "hour" ) { tm.tm_min = 0; tm.tm_sec = 0; }
-	else if( mode == "day" ) { tm.tm_hour = 0; tm.tm_min = 0; tm.tm_sec = 0; }
-	else if( mode == "week" ) { tm.tm_mday = tm.tm_mday - tm.tm_wday; tm.tm_hour = 0; tm.tm_min = 0; tm.tm_sec = 0; }
-	else if( mode == "month" ) { tm.tm_mday = 1; tm.tm_hour = 0; tm.tm_min = 0; tm.tm_sec = 0; }
-	else if( mode == "year" ) { tm.tm_mon = 0; tm.tm_mday = 1; tm.tm_hour = 0; tm.tm_min = 0; tm.tm_sec = 0; }
+	if( mode == "minute" ) { time.tm_sec = 0; }
+	else if( mode == "hour" ) { time.tm_min = 0; time.tm_sec = 0; }
+	else if( mode == "day" ) { time.tm_hour = 0; time.tm_min = 0; time.tm_sec = 0; }
+	else if( mode == "week" ) { time.tm_mday = time.tm_mday - time.tm_wday; time.tm_hour = 0; time.tm_min = 0; time.tm_sec = 0; }
+	else if( mode == "month" ) { time.tm_mday = 1; time.tm_hour = 0; time.tm_min = 0; time.tm_sec = 0; }
+	else if( mode == "year" ) { time.tm_mon = 0; time.tm_mday = 1; time.tm_hour = 0; time.tm_min = 0; time.tm_sec = 0; }
 	else
 	{
 		uassert(40641,
