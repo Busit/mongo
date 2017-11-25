@@ -1587,6 +1587,15 @@ public:
     const char* getOpName() const final;
 };
 
+class ExpressionRoundDate final : public ExpressionFixedArity<ExpressionRoundDate, 2> {
+public:
+    explicit ExpressionRoundDate(const boost::intrusive_ptr<ExpressionContext>& expCtx)
+        : ExpressionFixedArity<ExpressionRoundDate, 2>(expCtx) {}
+
+    Value evaluateInternal(Variables* vars) const final;
+    const char* getOpName() const final;
+};
+
 
 class ExpressionToBool final : public ExpressionFixedArity<ExpressionToBool, 1> {
 public:

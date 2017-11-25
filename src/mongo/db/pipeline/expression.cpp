@@ -4055,6 +4055,42 @@ const char* ExpressionToDate::getOpName() const {
     return "$toDate";
 }
 
+/* ------------------------- ExpressionRoundDate -------------------------- */
+
+Value ExpressionRoundDate::evaluateInternal(Variables* vars) const {
+	Value pDate(vpOperand[0]->evaluateInternal(vars));
+	Value pMode(vpOperand[0]->evaluateInternal(vars));
+	
+	uassert(40085,
+            str::stream() << "$roundDate requires an expression that evaluates to a string as a first "
+                             "argument, found: "
+                          << typeName(pMode.getType()),
+            pMode.getType() == BSONType::String);
+	
+	tm time = pDate.coerceToTm();
+	StringData mode = pMode.getStringData();
+	if( mode == "minute" ) { tm.tm_sec = 0; }
+	else if( mode == "hour" ) { tm.tm_min = 0; tm.tm_sec = 0; }
+	else if( mode == "day" ) { tm.tm_hour = 0; tm.tm_min = 0; tm.tm_sec = 0; }
+	else if( mode == "week" ) { tm.tm_mday = tm.tm_mday - tm.tm_wday; tm.tm_hour = 0; tm.tm_min = 0; tm.tm_sec = 0; }
+	else if( mode == "month" ) { tm.tm_mday = 1; tm.tm_hour = 0; tm.tm_min = 0; tm.tm_sec = 0; }
+	else if( mode == "year" ) { tm.tm_mon = 0; tm.tm_mday = 1; tm.tm_hour = 0; tm.tm_min = 0; tm.tm_sec = 0; }
+	else
+	{
+		uassert(40085,
+            str::stream() << "$roundDate requires an expression that evaluates to [minute, hour, day, week, month, year]"
+                             ", found: "
+                          << mode, false);
+	}
+	
+	return Value(mktime(tm));
+}
+
+REGISTER_EXPRESSION(roundDate, ExpressionRoundDate::parse);
+const char* ExpressionRoundDate::getOpName() const {
+    return "$roundDate";
+}
+
 /* ------------------------- ExpressionToBool -------------------------- */
 
 Value ExpressionToBool::evaluateInternal(Variables* vars) const {
