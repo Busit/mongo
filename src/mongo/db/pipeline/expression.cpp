@@ -4068,7 +4068,7 @@ Value ExpressionRoundDate::evaluateInternal(Variables* vars) const {
             pMode.getType() == BSONType::String);
 	
 	tm time = pDate.coerceToTm();
-	StringData mode = pMode.getStringData();
+	std::string mode = pMode.getString();
 	if( mode == "minute" ) { time.tm_sec = 0; }
 	else if( mode == "hour" ) { time.tm_min = 0; time.tm_sec = 0; }
 	else if( mode == "day" ) { time.tm_hour = 0; time.tm_min = 0; time.tm_sec = 0; }
@@ -4083,7 +4083,7 @@ Value ExpressionRoundDate::evaluateInternal(Variables* vars) const {
                           << mode, false);
 	}
 	
-	return Value(mktime(tm));
+	return Value(mktime(time));
 }
 
 REGISTER_EXPRESSION(roundDate, ExpressionRoundDate::parse);
