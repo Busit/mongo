@@ -4061,7 +4061,7 @@ Value ExpressionRoundDate::evaluateInternal(Variables* vars) const {
 	Value pDate(vpOperand[0]->evaluateInternal(vars));
 	Value pMode(vpOperand[0]->evaluateInternal(vars));
 	
-	uassert(40088,
+	uassert(40640,
             str::stream() << "$roundDate requires an expression that evaluates to a string as a first "
                              "argument, found: "
                           << typeName(pMode.getType()),
@@ -4077,7 +4077,7 @@ Value ExpressionRoundDate::evaluateInternal(Variables* vars) const {
 	else if( mode == "year" ) { tm.tm_mon = 0; tm.tm_mday = 1; tm.tm_hour = 0; tm.tm_min = 0; tm.tm_sec = 0; }
 	else
 	{
-		uassert(40089,
+		uassert(40641,
             str::stream() << "$roundDate requires an expression that evaluates to [minute, hour, day, week, month, year]"
                              ", found: "
                           << mode, false);
