@@ -4059,10 +4059,10 @@ const char* ExpressionToDate::getOpName() const {
 
 Value ExpressionRoundDate::evaluateInternal(Variables* vars) const {
 	Value pDate(vpOperand[0]->evaluateInternal(vars));
-	Value pMode(vpOperand[0]->evaluateInternal(vars));
+	Value pMode(vpOperand[1]->evaluateInternal(vars));
 	
 	uassert(40640,
-            str::stream() << "$roundDate requires an expression that evaluates to a string as a first "
+            str::stream() << "$roundDate requires an expression that evaluates to a string as a second "
                              "argument, found: "
                           << typeName(pMode.getType()),
             pMode.getType() == BSONType::String);
@@ -4079,7 +4079,7 @@ Value ExpressionRoundDate::evaluateInternal(Variables* vars) const {
 	{
 		uassert(40641,
             str::stream() << "$roundDate requires an expression that evaluates to [minute, hour, day, week, month, year]"
-                             ", found: "
+                             "as a second argument, found: "
                           << mode, false);
 	}
 	
