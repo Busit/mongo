@@ -117,6 +117,7 @@ public:
     explicit Value(const MinKeyLabeler&) : _storage(MinKey) {}        // MINKEY
     explicit Value(const MaxKeyLabeler&) : _storage(MaxKey) {}        // MAXKEY
     explicit Value(const Date_t& date) : _storage(Date, date.toMillisSinceEpoch()) {}
+	explicit Value(const time_t& time) : _storage(Date, time * 1000LL) {}
 
     // TODO: add an unsafe version that can share storage with the BSONElement
     /// Deep-convert from BSONElement to Value
