@@ -70,6 +70,7 @@ NOTES:
 	So make sure that your "alternatives" are pointing to GCC 5.3, Scons 2.3 and Python 2.7.
 * The output executable will include debug symbols. Run the 'strip' command on the executables to significantly reduce the file size.
 
+
 To install dependencies on Debian or Ubuntu systems:
 
     # aptitude install scons build-essential
@@ -82,6 +83,8 @@ To run tests as well, you will need PyMongo:
 Then build as usual with `scons`:
 
     $ scons all
+	or
+	$ scons core -j 3 --ssl --link-model=object --opt=on --dbg=off --disable-warnings-as-errors --disable-minimum-compiler-version-enforcement CC=/usr/bin/clang CXX=/usr/bin/clang++
 
 OS X
 --------------
