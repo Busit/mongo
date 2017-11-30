@@ -44,6 +44,7 @@
 #include "mongo/platform/decimal128.h"
 #include "mongo/util/hex.h"
 #include "mongo/util/mongoutils/str.h"
+#include "mongo/db/server_options.h"
 
 namespace mongo {
 using namespace mongoutils;
@@ -449,7 +450,7 @@ bool Value::coerceToBool() const {
 		
 		case Date:
 		{
-			if( getDate() == 0LL )
+			if( serverGlobalParams.implicitTypeConversion && getDate() == 0LL )
 				return false;
 			else
 				return true;
@@ -457,6 +458,7 @@ bool Value::coerceToBool() const {
 		
 		case String:
 		{
+			if( !serverGlobalParams.implicitTypeConversion ) return true;
 			if( getString().length() == 1 && getStringData().compare(StringData("1")) == 0 )
 				return true;
 			else if( getStringData().compare(StringData("true")) == 0 )
@@ -498,27 +500,33 @@ int Value::coerceToInt() const {
             return (_storage.getDecimal()).toInt();
 
 		case Bool:
-			return (getBool() ? 1 : 0);
-		
+			if( serverGlobalParams.implicitTypeConversion )
+				return (getBool() ? 1 : 0);
+			break;
 		case String:
-		{
-			double number = 0;
-			if (parseNumberFromString<double>(coerceToString(), &number).isOK())
-				return static_cast<int>(number);
-			else
-				return 0;
-		}
-		
+			if( serverGlobalParams.implicitTypeConversion )
+			{
+				double number = 0;
+				if (parseNumberFromString<double>(coerceToString(), &number).isOK())
+					return static_cast<int>(number);
+				else
+					return 0;
+			}
+			break;
 		case Date:
-            return static_cast<int>(getDate());
-		
+			if( serverGlobalParams.implicitTypeConversion )
+				return static_cast<int>(getDate());
+			break;
         default:
-			return 0;
-//            uassert(16003,
-//                    str::stream() << "can't convert from BSON type " << typeName(getType())
-//                                  << " to int",
-//                    false);
+			if( serverGlobalParams.implicitTypeConversion )
+				return 0;
+			break;
     }  // switch(getType())
+	
+	uassert(16003,
+        str::stream() << "can't convert from BSON type " << typeName(getType())
+                      << " to int",
+        false);
 }
 
 long long Value::coerceToLong() const {
@@ -536,27 +544,33 @@ long long Value::coerceToLong() const {
             return (_storage.getDecimal()).toLong();
 		
 		case Bool:
-			return (getBool() ? 1LL : 0LL);
-		
+			if( serverGlobalParams.implicitTypeConversion )
+				return (getBool() ? 1LL : 0LL);
+			break;
 		case String:
-		{
-			double number = 0;
-			if (parseNumberFromString<double>(coerceToString(), &number).isOK())
-				return static_cast<long long>(number);
-			else
-				return 0LL;
-		}
-		
+			if( serverGlobalParams.implicitTypeConversion )
+			{
+				double number = 0;
+				if (parseNumberFromString<double>(coerceToString(), &number).isOK())
+					return static_cast<long long>(number);
+				else
+					return 0LL;
+			}
+			break;
 		case Date:
-            return getDate();
-
+			if( serverGlobalParams.implicitTypeConversion )
+				return getDate();
+			break;
         default:
-			return 0LL;
-//            uassert(16004,
-//                    str::stream() << "can't convert from BSON type " << typeName(getType())
-//                                  << " to long",
-//                    false);
+			if( serverGlobalParams.implicitTypeConversion )
+				return 0LL;
+			break;
     }  // switch(getType())
+	
+    uassert(16004,
+            str::stream() << "can't convert from BSON type " << typeName(getType())
+                          << " to long",
+            false);
 }
 
 double Value::coerceToDouble() const {
@@ -574,27 +588,33 @@ double Value::coerceToDouble() const {
             return (_storage.getDecimal()).toDouble();
 
 		case Bool:
-			return (getBool() ? 1.0 : 0.0);
-		
+			if( serverGlobalParams.implicitTypeConversion )
+				return (getBool() ? 1.0 : 0.0);
+			break;
 		case String:
-		{
-			double number = 0.0;
-			if (parseNumberFromString<double>(coerceToString(), &number).isOK())
-				return number;
-			else
-				return 0.0;
-		}
-		
+			if( serverGlobalParams.implicitTypeConversion )
+			{
+				double number = 0.0;
+				if (parseNumberFromString<double>(coerceToString(), &number).isOK())
+					return number;
+				else
+					return 0.0;
+			}
+			break;
 		case Date:
-            return static_cast<double>(getDate());
-		
+			if( serverGlobalParams.implicitTypeConversion )
+				return static_cast<double>(getDate());
+			break;
         default:
-			return 0.0;
-//            uassert(16005,
-//                    str::stream() << "can't convert from BSON type " << typeName(getType())
-//                                  << " to double",
-//                    false);
+			if( serverGlobalParams.implicitTypeConversion )
+				return 0.0;
+			break;
     }  // switch(getType())
+	
+    uassert(16005,
+            str::stream() << "can't convert from BSON type " << typeName(getType())
+                          << " to double",
+            false);
 }
 
 Decimal128 Value::coerceToDecimal() const {
@@ -612,32 +632,39 @@ Decimal128 Value::coerceToDecimal() const {
             return Decimal128(_storage.doubleValue);
 
 		case Bool:
-			return (getBool() ? Decimal128(static_cast<int32_t>(1)) : Decimal128(static_cast<int32_t>(0)));
-		
+			if( serverGlobalParams.implicitTypeConversion )
+				return (getBool() ? Decimal128(static_cast<int32_t>(1)) : Decimal128(static_cast<int32_t>(0)));
+			break;
 		case String:
-		{
-			double number = 0;
-			if (parseNumberFromString<double>(coerceToString(), &number).isOK())
-				return Decimal128(number);
-			else
-				return Decimal128(0.0);
-		}
-		
+			if( serverGlobalParams.implicitTypeConversion )
+			{
+				double number = 0;
+				if (parseNumberFromString<double>(coerceToString(), &number).isOK())
+					return Decimal128(number);
+				else
+					return Decimal128(0.0);
+			}
+			break;
 		case Date:
-            return Decimal128(static_cast<int64_t>(getDate()));
-		
+			if( serverGlobalParams.implicitTypeConversion )
+				return Decimal128(static_cast<int64_t>(getDate()));
+			break;
         default:
-			return Decimal128(0.0);
-//            uassert(16008,
-//                    str::stream() << "can't convert from BSON type " << typeName(getType())
-//                                  << " to decimal",
-//                    false);
+			if( serverGlobalParams.implicitTypeConversion )
+				return Decimal128(0.0);
+			break;
+
     }  // switch(getType())
+
+    uassert(16008,
+            str::stream() << "can't convert from BSON type " << typeName(getType())
+                          << " to decimal",
+            false);
 }
 
 long long Value::coerceToDate() const {
 	long long v = 0LL;
-	if( numeric() )
+	if( serverGlobalParams.implicitTypeConversion && numeric() )
 	{
 		if( std::isnan(coerceToDouble()) )
 			return 0LL;
@@ -650,23 +677,25 @@ long long Value::coerceToDate() const {
 	
     switch (getType()) {
 		case String:
-		{
-			double number = 0;
-			if (parseNumberFromString<double>(coerceToString(), &number).isOK())
+			if( serverGlobalParams.implicitTypeConversion )
 			{
-				v = static_cast<long long>(number);
-				if( v < 9000000000LL ) // assume it was in seconds
-					return v * 1000LL;
+				double number = 0;
+				if (parseNumberFromString<double>(coerceToString(), &number).isOK())
+				{
+					v = static_cast<long long>(number);
+					if( v < 9000000000LL ) // assume it was in seconds
+						return v * 1000LL;
+					else
+						return v;
+				}
 				else
-					return v;
+					return 0LL;
 			}
-			else
-				return 0LL;
-		}
-		
+			break;
 		case Bool:
-			return (getBool() ? 1LL : 0LL);
-			
+			if( serverGlobalParams.implicitTypeConversion )
+				return (getBool() ? 1LL : 0LL);
+			break;
         case Date:
             return getDate();
 
@@ -674,12 +703,15 @@ long long Value::coerceToDate() const {
             return getTimestamp().getSecs() * 1000LL;
 
         default:
-			return 0LL;
-//            uassert(16006,
-//                    str::stream() << "can't convert from BSON type " << typeName(getType())
-//                                  << " to Date",
-//                    false);
+			if( serverGlobalParams.implicitTypeConversion )
+				return 0LL;
+			break;
     }  // switch(getType())
+	
+    uassert(16006,
+            str::stream() << "can't convert from BSON type " << typeName(getType())
+                          << " to Date",
+            false);
 }
 
 time_t Value::coerceToTimeT() const {
@@ -764,14 +796,19 @@ string Value::coerceToString() const {
             return "";
 			
 		case Bool:
-			return getBool() ? "true" : "false";
-
+			if( serverGlobalParams.implicitTypeConversion )
+				return getBool() ? "true" : "false";
+			break;
         default:
-            uassert(16007,
-                    str::stream() << "can't convert from BSON type " << typeName(getType())
-                                  << " to String",
-                    false);
+			if( serverGlobalParams.implicitTypeConversion )
+				return "";
+			break;
     }  // switch(getType())
+	
+    uassert(16007,
+            str::stream() << "can't convert from BSON type " << typeName(getType())
+                          << " to String",
+            false);
 }
 
 Timestamp Value::coerceToTimestamp() const {
@@ -780,11 +817,12 @@ Timestamp Value::coerceToTimestamp() const {
             return getTimestamp();
 
         default:
-			return Timestamp(coerceToDate());
-//            uassert(16378,
-//                    str::stream() << "can't convert from BSON type " << typeName(getType())
-//                                  << " to timestamp",
-//                    false);
+			if( serverGlobalParams.implicitTypeConversion )
+				return Timestamp(coerceToDate());
+            uassert(16378,
+                    str::stream() << "can't convert from BSON type " << typeName(getType())
+                                  << " to timestamp",
+                    false);
     }  // switch(getType())
 }
 
@@ -810,9 +848,16 @@ int Value::compare(const Value& rL,
     BSONType lType = rL.getType();
     BSONType rType = rR.getType();
 
-    int ret = 0;
-	int typeCompare = cmp(canonicalizeBSONType(lType), canonicalizeBSONType(rType));
-	double number = 0;
+    int ret = lType == rType ? 0  // fast-path common case
+                             : cmp(canonicalizeBSONType(lType), canonicalizeBSONType(rType));
+
+    if (ret)
+	{
+		if( serverGlobalParams.implicitTypeConversion ) 
+			return Value::compareImplicit(rL, rR,stringComparator);
+		else
+			return ret;
+	}
 
     switch (lType) {
         // Order of types is the same as in compareElementValues() to make it easier to verify
@@ -822,66 +867,17 @@ int Value::compare(const Value& rL,
         case Undefined:
         case jstNULL:
         case MaxKey:
-        case MinKey: {
-			if (typeCompare) return typeCompare;
-			else return ret;
-		}
+        case MinKey:
+            return ret;
 
         case Bool:
-			switch (rType) {
-				case Bool:
-					return rL.getBool() - rR.getBool();
-				case NumberDecimal:
-                case NumberInt:
-                case NumberLong:
-                case NumberDouble:
-					// TYPE AUTO CONVERSION : compare is left to right so convert rL to number
-					return Value::compare(Value(rL.getBool() ? 1 : 0), rR, stringComparator);
-				case String:
-					// TYPE AUTO CONVERSION : compare is left to right so convert rL to string
-					if( rR.getString().length() == 1 )
-						return Value::compare(Value(rL.getBool() ? "1" : "0"), rR, stringComparator);
-					else
-						return Value::compare(Value(rL.getBool() ? "true" : "false"), rR, stringComparator);
-				case Date:
-					// TYPE AUTO CONVERSION : compare is left to right so convert rL to number and rR to number too
-					return Value::compare(Value(rL.getBool() ? 1LL : 0LL), Value(rR.getDate()), stringComparator);
-				default:
-					return typeCompare;
-			}
+            return rL.getBool() - rR.getBool();
 
         case bsonTimestamp:  // unsigned
-		{
-			if (typeCompare) return typeCompare;
-			else return cmp(rL._storage.timestampValue, rR._storage.timestampValue);
-		}
+            return cmp(rL._storage.timestampValue, rR._storage.timestampValue);
 
         case Date:  // signed
-		{
-			switch (rType) {
-				case Bool:
-					return Value::compare(Value(rL.getDate()), Value(rR.getBool() ? 1LL : 0LL), stringComparator);
-				case NumberDecimal:
-                case NumberInt:
-                case NumberLong:
-                case NumberDouble:
-					// TYPE AUTO CONVERSION : compare is left to right so convert rL to number
-					return Value::compare(Value(rL.getDate()), rR, stringComparator);
-				case String:
-					// TYPE AUTO CONVERSION : first try both as number
-					if (parseNumberFromString<double>(rR.coerceToString(), &number).isOK() && !std::isnan(number))
-						return compareLongToDouble(rL.getDate(), number);
-					// TYPE AUTO CONVERSION : otherwise convert date as string
-					if (!stringComparator)
-						return StringData(rL.coerceToString()).compare(rR.getStringData());
-					else
-						return stringComparator->compare(StringData(rL.coerceToString()), rR.getStringData());
-				case Date:
-					return cmp(rL._storage.dateValue, rR._storage.dateValue);
-				default:
-					return typeCompare;
-			}
-		}
+            return cmp(rL._storage.dateValue, rR._storage.dateValue);
 
         // Numbers should compare by equivalence even if different types
 
@@ -896,17 +892,8 @@ int Value::compare(const Value& rL,
                 case NumberDouble:
                     return compareDecimalToDouble(rL._storage.getDecimal(),
                                                   rR._storage.doubleValue);
-				case Bool: 
-					// TYPE AUTO CONVERSION : compare is left to right so convert rL to bool
-					return Value::compare(Value(compareDecimalToInt(rL._storage.getDecimal(), 0) > 0 ? true : false), rR, stringComparator);
-				case String:
-					// TYPE AUTO CONVERSION : compare is left to right so convert rL to string
-					return Value::compare(Value(rL.coerceToString()), rR, stringComparator);
-				case Date:
-					// TYPE AUTO CONVERSION : date to long
-					return compareDecimalToLong(rL._storage.getDecimal(), rR.getDate());
-				default:
-					return typeCompare;
+                default:
+                    invariant(false);
             }
         }
 
@@ -922,17 +909,8 @@ int Value::compare(const Value& rL,
                     return compareDoubles(rL._storage.intValue, rR._storage.doubleValue);
                 case NumberDecimal:
                     return compareIntToDecimal(rL._storage.intValue, rR._storage.getDecimal());
-				case Bool: 
-					// TYPE AUTO CONVERSION : compare is left to right so convert rL to bool
-					return Value::compare(Value(rL._storage.intValue > 0 ? true : false), rR, stringComparator);
-				case String:
-					// TYPE AUTO CONVERSION : compare is left to right so convert rL to string
-					return Value::compare(Value(rL.coerceToString()), rR, stringComparator);
-				case Date:
-					// TYPE AUTO CONVERSION : date to long
-					return compareLongs(rL._storage.intValue, rR.getDate());
-				default:
-					return typeCompare;
+                default:
+                    invariant(false);
             }
         }
 
@@ -946,17 +924,8 @@ int Value::compare(const Value& rL,
                     return compareLongToDouble(rL._storage.longValue, rR._storage.doubleValue);
                 case NumberDecimal:
                     return compareLongToDecimal(rL._storage.longValue, rR._storage.getDecimal());
-				case Bool: 
-					// TYPE AUTO CONVERSION : compare is left to right so convert rL to bool
-					return Value::compare(Value(rL._storage.longValue > 0 ? true : false), rR, stringComparator);
-				case String:
-					// TYPE AUTO CONVERSION : compare is left to right so convert rL to string
-					return Value::compare(Value(rL.coerceToString()), rR, stringComparator);
-				case Date:
-					// TYPE AUTO CONVERSION : date to long
-					return compareLongs(rL._storage.longValue, rR.getDate());
-				default:
-					return typeCompare;
+                default:
+                    invariant(false);
             }
         }
 
@@ -971,80 +940,30 @@ int Value::compare(const Value& rL,
                 case NumberDecimal:
                     return compareDoubleToDecimal(rL._storage.doubleValue,
                                                   rR._storage.getDecimal());
-				case Bool: 
-					// TYPE AUTO CONVERSION : compare is left to right so convert rL to bool
-					return Value::compare(Value(rL._storage.doubleValue > 0.0 ? true : false), rR, stringComparator);
-				case String:
-					// TYPE AUTO CONVERSION : compare is left to right so convert rL to string
-					return Value::compare(Value(rL.coerceToString()), rR, stringComparator);
-				case Date:
-					// TYPE AUTO CONVERSION : date to long
-					return compareDoubleToLong(rL._storage.doubleValue, rR.getDate());
-				default:
-					return typeCompare;
+                default:
+                    invariant(false);
             }
         }
 
         case jstOID:
-		{
-			if (typeCompare) return typeCompare;
-			else return memcmp(rL._storage.oid, rR._storage.oid, OID::kOIDSize);
-		}   
+            return memcmp(rL._storage.oid, rR._storage.oid, OID::kOIDSize); 
 
         case String: {
-			switch (rType) {
-                case NumberDouble:
-                case NumberInt:
-                case NumberLong:
-                case NumberDecimal: {
-					// TYPE AUTO CONVERSION : compare is left to right so convert rL to number
-					if (parseNumberFromString<double>(rL.coerceToString(), &number).isOK())
-						return Value::compare(Value(number), rR, stringComparator);
-					else
-						return Value::compare(Value(std::nan("NaN")), rR, stringComparator);
-				}
-				case Bool:
-					// TYPE AUTO CONVERSION : compare is left to right so convert rR to string because it is easier than rL to bool
-					if( rL.getString().length() == 1 )
-						return Value::compare(rL, Value(rR.getBool() ? "1" : "0"), stringComparator);
-					else
-						return Value::compare(rL, Value(rR.getBool() ? "true" : "false"), stringComparator);
-				case String: {
-					if (!stringComparator)
-						return rL.getStringData().compare(rR.getStringData());
-					else
-						return stringComparator->compare(rL.getStringData(), rR.getStringData());
-				}
-				case Date:
-					// TYPE AUTO CONVERSION : first try both as number
-					if (parseNumberFromString<double>(rL.coerceToString(), &number).isOK() && !std::isnan(number))
-						return compareDoubleToLong(number, rR.getDate());
-					// TYPE AUTO CONVERSION : otherwise convert date as string
-					if (!stringComparator)
-						return rL.getStringData().compare(StringData(rR.coerceToString()));
-					else
-						return stringComparator->compare(rL.getStringData(), StringData(rR.coerceToString()));
-				default:
-					return typeCompare;
-			}
+            if (!stringComparator) {
+                return rL.getStringData().compare(rR.getStringData());
+            }
+
+            return stringComparator->compare(rL.getStringData(), rR.getStringData());
         }
 
         case Code:
         case Symbol:
-		{
-			if (typeCompare) return typeCompare;
-			else return rL.getStringData().compare(rR.getStringData());
-		}
+            return rL.getStringData().compare(rR.getStringData());
 
         case Object:
-		{
-			if (typeCompare) return typeCompare;
-			else return Document::compare(rL.getDocument(), rR.getDocument(), stringComparator);
-		}
+            return Document::compare(rL.getDocument(), rR.getDocument(), stringComparator);
 
         case Array: {
-			if (typeCompare) return typeCompare;
-			
             const vector<Value>& lArr = rL.getArray();
             const vector<Value>& rArr = rR.getArray();
 
@@ -1061,8 +980,6 @@ int Value::compare(const Value& rL,
         }
 
         case DBRef: {
-			if (typeCompare) return typeCompare;
-			
             intrusive_ptr<const RCDBRef> l = rL._storage.getDBRef();
             intrusive_ptr<const RCDBRef> r = rR._storage.getDBRef();
             ret = cmp(l->ns.size(), r->ns.size());
@@ -1073,8 +990,6 @@ int Value::compare(const Value& rL,
         }
 
         case BinData: {
-			if (typeCompare) return typeCompare;
-			
             ret = cmp(rL.getStringData().size(), rR.getStringData().size());
             if (ret)
                 return ret;
@@ -1088,14 +1003,9 @@ int Value::compare(const Value& rL,
         }
 
         case RegEx:  // same as String in this impl but keeping order same as compareElementValues
-		{
-			if (typeCompare) return typeCompare;
-			else return rL.getStringData().compare(rR.getStringData());
-		}
+            return rL.getStringData().compare(rR.getStringData());
 
         case CodeWScope: {
-			if (typeCompare) return typeCompare;
-			
             intrusive_ptr<const RCCodeWScope> l = rL._storage.getCodeWScope();
             intrusive_ptr<const RCCodeWScope> r = rR._storage.getCodeWScope();
 
@@ -1108,6 +1018,164 @@ int Value::compare(const Value& rL,
     }
     verify(false);
 }
+
+int Value::compareImplicit(const Value& rL,
+                   const Value& rR,
+                   const StringData::ComparatorInterface* stringComparator) {
+    BSONType lType = rL.getType();
+    BSONType rType = rR.getType();
+
+	int typeCompare = cmp(canonicalizeBSONType(lType), canonicalizeBSONType(rType));
+	
+	// caution to infinite loop, the opposite check in Value::compare redirects here !
+	if( !typeCompare ) // if types are compatible use the regular compare
+		return Value::compare(rL, rR, stringComparator);
+	
+	double number = 0;
+
+    switch (lType)
+	{
+        case EOO:
+        case Undefined:
+        case jstNULL:
+        case MaxKey:
+        case MinKey:
+			switch (rType)
+			{
+				case NumberDecimal:
+				case NumberDouble:
+					if( std::isnan(rR.coerceToDouble()) ) return 0;
+				default:
+					return typeCompare;
+			}
+
+        case Bool:
+			switch (rType)
+			{
+				case NumberDecimal:
+                case NumberInt:
+                case NumberLong:
+                case NumberDouble:
+					return Value::compare(Value(rL.getBool() ? 1 : 0), rR, stringComparator);
+				case String:
+					if( rR.getString().length() == 1 )
+						return Value::compare(Value(rL.getBool() ? "1" : "0"), rR, stringComparator);
+					else
+						return Value::compare(Value(rL.getBool() ? "true" : "false"), rR, stringComparator);
+				case Date:
+					return Value::compare(Value(rL.getBool() ? 1LL : 0LL), Value(rR.getDate()), stringComparator);
+				default:
+					return typeCompare;
+			}
+
+        case Date:
+			switch (rType) 
+			{
+				case Bool:
+					return Value::compare(Value(rL.getDate()), Value(rR.getBool() ? 1LL : 0LL), stringComparator);
+				case NumberDecimal:
+                case NumberInt:
+                case NumberLong:
+                case NumberDouble:
+					return Value::compare(Value(rL.getDate()), rR, stringComparator);
+				case String:
+					if (parseNumberFromString<double>(rR.coerceToString(), &number).isOK() && !std::isnan(number))
+						return compareLongToDouble(rL.getDate(), number);
+					if (!stringComparator)
+						return StringData(rL.coerceToString()).compare(rR.getStringData());
+					else
+						return stringComparator->compare(StringData(rL.coerceToString()), rR.getStringData());
+				default:
+					return typeCompare;
+			}
+
+        case NumberDecimal:
+            switch (rType) 
+			{
+                case Bool: 
+					return Value::compare(Value(compareDecimalToInt(rL._storage.getDecimal(), 0) > 0 ? true : false), rR, stringComparator);
+				case String:
+					return Value::compare(Value(rL.coerceToString()), rR, stringComparator);
+				case Date:
+					return compareDecimalToLong(rL._storage.getDecimal(), rR.getDate());
+				default:
+					return typeCompare;
+            }
+
+        case NumberInt:
+            switch (rType) 
+			{
+                case Bool: 
+					return Value::compare(Value(rL._storage.intValue > 0 ? true : false), rR, stringComparator);
+				case String:
+					return Value::compare(Value(rL.coerceToString()), rR, stringComparator);
+				case Date:
+					return compareLongs(rL._storage.intValue, rR.getDate());
+				default:
+					return typeCompare;
+            }
+
+        case NumberLong:
+            switch (rType) 
+			{
+                case Bool: 
+					return Value::compare(Value(rL._storage.longValue > 0 ? true : false), rR, stringComparator);
+				case String:
+					return Value::compare(Value(rL.coerceToString()), rR, stringComparator);
+				case Date:
+					return compareLongs(rL._storage.longValue, rR.getDate());
+				default:
+					return typeCompare;
+            }
+
+        case NumberDouble:
+            switch (rType) 
+			{
+                case Bool: 
+					return Value::compare(Value(rL._storage.doubleValue > 0.0 ? true : false), rR, stringComparator);
+				case String:
+					return Value::compare(Value(rL.coerceToString()), rR, stringComparator);
+				case Date:
+					return compareDoubleToLong(rL._storage.doubleValue, rR.getDate());
+				default:
+					return typeCompare;
+            }
+
+        case String:
+			switch (rType) 
+			{
+                case NumberDouble:
+                case NumberInt:
+                case NumberLong:
+                case NumberDecimal:
+					if (parseNumberFromString<double>(rL.coerceToString(), &number).isOK())
+						return Value::compare(Value(number), rR, stringComparator);
+					else
+						return Value::compare(Value(std::nan("NaN")), rR, stringComparator);
+				case Bool:
+					if( rL.getString().length() == 1 )
+						return Value::compare(rL, Value(rR.getBool() ? "1" : "0"), stringComparator);
+					else
+						return Value::compare(rL, Value(rR.getBool() ? "true" : "false"), stringComparator);
+				case Date:
+					// first try both as number
+					if (parseNumberFromString<double>(rL.coerceToString(), &number).isOK() && !std::isnan(number))
+						return compareDoubleToLong(number, rR.getDate());
+					// otherwise convert date as string
+					if (!stringComparator)
+						return rL.getStringData().compare(StringData(rR.coerceToString()));
+					else
+						return stringComparator->compare(rL.getStringData(), StringData(rR.coerceToString()));
+				default:
+					return typeCompare;
+			}
+
+        default: // no implicit conversion known for other types
+			return typeCompare;
+    }
+    verify(false);
+}
+
 
 void Value::hash_combine(size_t& seed,
                          const StringData::ComparatorInterface* stringComparator) const {
