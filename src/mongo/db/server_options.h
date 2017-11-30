@@ -51,6 +51,9 @@ struct ServerGlobalParams {
     std::string bind_ip;  // --bind_ip
     bool rest = false;    // --rest
     bool jsonp = false;   // --jsonp
+	
+	bool implicitTypeConversion = false; // --implicitConversion
+	bool nativeTypeRestriction = false; // --nativeTypeRestriction
 
     bool indexBuildRetry = true;  // --noIndexBuildRetry
 

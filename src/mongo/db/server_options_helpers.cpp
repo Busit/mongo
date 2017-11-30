@@ -316,6 +316,26 @@ Status addGeneralServerOptions(moe::OptionSection* options) {
                 "(keyFile/sendKeyFile/sendX509/x509)");
 
 #ifndef _WIN32
+	options
+        ->addOptionChaining(
+            "implicitConversion", "implicitConversion", moe::Switch, "perform implicit type conversion on on left operand to match right operand")
+        .setSources(moe::SourceAllLegacy);
+
+    options
+        ->addOptionChaining(
+            "opt.implicitConversion.enabled", "", moe::Bool, "perform implicit type conversion on on left operand to match right operand")
+        .setSources(moe::SourceYAMLConfig);
+	
+	options
+        ->addOptionChaining(
+            "nativeTypeRestriction", "nativeTypeRestriction", moe::Switch, "restrict internal data representation to JSON compatible types")
+        .setSources(moe::SourceAllLegacy);
+
+    options
+        ->addOptionChaining(
+            "opt.nativeTypeRestriction.enabled", "", moe::Bool, "restrict internal data representation to JSON compatible types")
+        .setSources(moe::SourceYAMLConfig);
+		
     options
         ->addOptionChaining(
             "nounixsocket", "nounixsocket", moe::Switch, "disable listening on unix sockets")
@@ -669,6 +689,34 @@ Status canonicalizeServerOptions(moe::Environment* params) {
             return ret;
         }
     }
+	
+	// "opt.implicitConversion.enabled" comes from the config file, so override it if
+    // "implicitConversion" is set since that comes from the command line.
+    if (params->count("implicitConversion")) {
+        Status ret = params->set("opt.implicitConversion.enabled",
+                                 moe::Value(!(*params)["implicitConversion"].as<bool>()));
+        if (!ret.isOK()) {
+            return ret;
+        }
+        ret = params->remove("implicitConversion");
+        if (!ret.isOK()) {
+            return ret;
+        }
+    }
+	
+	// "opt.nativeTypeRestriction.enabled" comes from the config file, so override it if
+    // "nativeTypeRestriction" is set since that comes from the command line.
+    if (params->count("nativeTypeRestriction")) {
+        Status ret = params->set("opt.nativeTypeRestriction.enabled",
+                                 moe::Value(!(*params)["nativeTypeRestriction"].as<bool>()));
+        if (!ret.isOK()) {
+            return ret;
+        }
+        ret = params->remove("nativeTypeRestriction");
+        if (!ret.isOK()) {
+            return ret;
+        }
+    }
 
     // Handle both the "--verbose" string argument and the "-vvvv" arguments at the same time so
     // that we ensure that we set the log level to the maximum of the options provided
@@ -895,6 +943,13 @@ Status storeServerOptions(const moe::Environment& params) {
         serverGlobalParams.socket = params["net.unixDomainSocket.pathPrefix"].as<string>();
     }
 
+	if (params.count("opt.implicitTypeConversion.enabled")) {
+        serverGlobalParams.implicitTypeConversion = !params["opt.implicitTypeConversion.enabled"].as<bool>();
+    }
+	if (params.count("opt.nativeTypeRestriction.enabled")) {
+        serverGlobalParams.nativeTypeRestriction = !params["opt.nativeTypeRestriction.enabled"].as<bool>();
+    }
+	
     if (params.count("net.unixDomainSocket.enabled")) {
         serverGlobalParams.noUnixSocket = !params["net.unixDomainSocket.enabled"].as<bool>();
     }
