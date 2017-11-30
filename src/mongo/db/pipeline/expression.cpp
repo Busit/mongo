@@ -4001,11 +4001,9 @@ Value ExpressionToNumber::evaluateInternal(Variables* vars) const {
 			else
 				return pNumber;
         case NumberInt:
-			return pNumber;
         case NumberLong:
-			return Value(static_cast<double>(pNumber.getLong()));
         case NumberDecimal:
-			return Value(static_cast<double>(pNumber.getDecimal()));
+			return Value(pNumber.getDouble()));
 		case EOO:
         case jstNULL:
         case Undefined:
