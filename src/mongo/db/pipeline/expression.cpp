@@ -4003,7 +4003,7 @@ Value ExpressionToNumber::evaluateInternal(Variables* vars) const {
         case NumberInt:
         case NumberLong:
         case NumberDecimal:
-			return Value(pNumber.getDouble()));
+			return Value(pNumber.getDouble());
 		case EOO:
         case jstNULL:
         case Undefined:
