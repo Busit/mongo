@@ -66,7 +66,9 @@ string BSONElement::jsonString(JsonStringFormat format, bool includeFieldNames, 
             if (format == TenGen) {
                 s << "NumberLong(" << _numberLong() << ")";
             } else {
-                s << "{ \"$numberLong\" : \"" << _numberLong() << "\" }";
+				// just output the long to decimal format and dont care about the parser
+				s << _numberLong();
+                //s << "{ \"$numberLong\" : \"" << _numberLong() << "\" }";
             }
             break;
         case NumberInt:
