@@ -4001,9 +4001,11 @@ Value ExpressionToNumber::evaluateInternal(Variables* vars) const {
 			else
 				return pNumber;
         case NumberInt:
-        case NumberLong:
-        case NumberDecimal:
 			return pNumber;
+        case NumberLong:
+			return Value(static_cast<double>(pNumber.getLong()));
+        case NumberDecimal:
+			return Value(static_cast<double>(pNumber.getDecimal()));
 		case EOO:
         case jstNULL:
         case Undefined:
@@ -4011,13 +4013,13 @@ Value ExpressionToNumber::evaluateInternal(Variables* vars) const {
 		case Bool:
 			return Value(pNumber.getBool() ? 1 : 0);
 		case Date:
-			return Value(pNumber.getDate());
+			return Value(static_cast<double>(pNumber.getDate()));
 		default:
 			if( base != 10 )
 			{
 				long long numberLong = 0;
 				if( parseNumberFromStringWithBase<long long>(pNumber.coerceToString(), base, &numberLong).isOK() )
-					return Value(numberLong);
+					return Value(static_cast<double>(numberLong));
 				else
 					return (use_nan ? Value(std::nan("NaN")) : Value(0));
 			}
