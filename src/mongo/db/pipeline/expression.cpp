@@ -45,6 +45,7 @@
 #include "mongo/util/mongoutils/str.h"
 #include "mongo/util/string_map.h"
 #include "mongo/util/summation.h"
+#include "mongo/db/server_options.h"
 
 namespace mongo {
 using Parser = Expression::Parser;
@@ -889,81 +890,84 @@ Value ExpressionCompare::evaluateInternal(Variables* vars) const {
     Value pLeft(vpOperand[0]->evaluateInternal(vars));
     Value pRight(vpOperand[1]->evaluateInternal(vars));
 
-	BSONType lType = pLeft.getType();
-	BSONType rType = pRight.getType();
-	
-	// handle edge cases with null & NaN :
-	// - null and NaN only EQ or GTE or LTE another null or NaN
-	// - null and NaN NE anything else than null or NaN
-	// - null and NaN are never GT or LT than anything
-	if( cmpOp != CMP )
+	if( serverGlobalParams.implicitTypeConversion )
 	{
-		bool leftIsNull = false;
-		bool leftIsNumber = false;
-		bool leftIsNaN = false;
-		bool rightIsNull = false;
-		bool rightIsNumber = false;
-		bool rightIsNaN = false;
+		BSONType lType = pLeft.getType();
+		BSONType rType = pRight.getType();
 		
-		switch(lType) {
-			case EOO:
-			case MinKey:
-			case MaxKey:
-			case Undefined:
-			case jstNULL: leftIsNull = true; break;
-			case NumberDouble:
-			case NumberInt:
-			case NumberLong:
-			case NumberDecimal: {
-				leftIsNumber = true; 
-				leftIsNaN = std::isnan(pLeft.coerceToDouble());
-				break;
-			}
-			default: break;
-		}
-		
-		switch(rType) {
-			case EOO:
-			case MinKey:
-			case MaxKey:
-			case Undefined:
-			case jstNULL: rightIsNull = true; break;
-			case NumberDouble:
-			case NumberInt:
-			case NumberLong:
-			case NumberDecimal: {
-				rightIsNumber = true; 
-				rightIsNaN = std::isnan(pRight.coerceToDouble());
-				break;
-			}
-			default: break;
-		}
-		
-		if( (rightIsNumber && lType == String) )
+		// handle edge cases with null & NaN :
+		// - null and NaN only EQ or GTE or LTE another null or NaN
+		// - null and NaN NE anything else than null or NaN
+		// - null and NaN are never GT or LT than anything
+		if( cmpOp != CMP )
 		{
-			double number = 0;
-			if (parseNumberFromString<double>(pLeft.coerceToString(), &number).isOK())
-				leftIsNaN = std::isnan(number);
-			else
-				leftIsNaN = true;
-		}
-		
-		switch(cmpOp) {
-			case GT:
-			case LT:
-				if( leftIsNull || leftIsNaN || rightIsNull || rightIsNaN ) return Value(false);
-				break;
-			case EQ:
-			case GTE:
-			case LTE:
-				if( (leftIsNull || leftIsNaN) && (rightIsNull || rightIsNaN) ) return Value(true);
-				if( leftIsNull || leftIsNaN || rightIsNull || rightIsNaN ) return Value(false);
-				break;
-			case NE:
-				if( (leftIsNull || leftIsNaN) && (rightIsNull || rightIsNaN) ) return Value(false);
-				if( leftIsNull || leftIsNaN || rightIsNull || rightIsNaN ) return Value(true);
-				break;
-			default: break;
+			bool leftIsNull = false;
+			bool leftIsNumber = false;
+			bool leftIsNaN = false;
+			bool rightIsNull = false;
+			bool rightIsNumber = false;
+			bool rightIsNaN = false;
+			
+			switch(lType) {
+				case EOO:
+				case MinKey:
+				case MaxKey:
+				case Undefined:
+				case jstNULL: leftIsNull = true; break;
+				case NumberDouble:
+				case NumberInt:
+				case NumberLong:
+				case NumberDecimal: {
+					leftIsNumber = true; 
+					leftIsNaN = std::isnan(pLeft.coerceToDouble());
+					break;
+				}
+				default: break;
+			}
+			
+			switch(rType) {
+				case EOO:
+				case MinKey:
+				case MaxKey:
+				case Undefined:
+				case jstNULL: rightIsNull = true; break;
+				case NumberDouble:
+				case NumberInt:
+				case NumberLong:
+				case NumberDecimal: {
+					rightIsNumber = true; 
+					rightIsNaN = std::isnan(pRight.coerceToDouble());
+					break;
+				}
+				default: break;
+			}
+			
+			if( (rightIsNumber && lType == String) )
+			{
+				double number = 0;
+				if (parseNumberFromString<double>(pLeft.coerceToString(), &number).isOK())
+					leftIsNaN = std::isnan(number);
+				else
+					leftIsNaN = true;
+			}
+			
+			switch(cmpOp) {
+				case GT:
+				case LT:
+					if( leftIsNull || leftIsNaN || rightIsNull || rightIsNaN ) return Value(false);
+					break;
+				case EQ:
+				case GTE:
+				case LTE:
+					if( (leftIsNull || leftIsNaN) && (rightIsNull || rightIsNaN) ) return Value(true);
+					if( leftIsNull || leftIsNaN || rightIsNull || rightIsNaN ) return Value(false);
+					break;
+				case NE:
+					if( (leftIsNull || leftIsNaN) && (rightIsNull || rightIsNaN) ) return Value(false);
+					if( leftIsNull || leftIsNaN || rightIsNull || rightIsNaN ) return Value(true);
+					break;
+				default: break;
+			}
 		}
 	}
 	
@@ -3962,8 +3966,7 @@ Value ExpressionToString::evaluateInternal(Variables* vars) const {
         case Undefined:
             return Value("");
 		default:
-			string str(pString.coerceToString());
-			return Value(str);
+			return Value(pString.coerceToString());
 	}
 }
 
@@ -4003,7 +4006,10 @@ Value ExpressionToNumber::evaluateInternal(Variables* vars) const {
         case NumberInt:
         case NumberLong:
         case NumberDecimal:
-			return Value(pNumber.getDouble());
+			if( serverGlobalParams.nativeTypeRestriction )
+				return Value(pNumber.getDouble());
+			else
+				return pNumber;
 		case EOO:
         case jstNULL:
         case Undefined:
@@ -4011,13 +4017,21 @@ Value ExpressionToNumber::evaluateInternal(Variables* vars) const {
 		case Bool:
 			return Value(pNumber.getBool() ? 1 : 0);
 		case Date:
-			return Value(static_cast<double>(pNumber.getDate()));
+			if( serverGlobalParams.nativeTypeRestriction )
+				return Value(static_cast<double>(pNumber.getDate()));
+			else
+				return Value(pNumber.getDate());
 		default:
 			if( base != 10 )
 			{
 				long long numberLong = 0;
 				if( parseNumberFromStringWithBase<long long>(pNumber.coerceToString(), base, &numberLong).isOK() )
-					return Value(static_cast<double>(numberLong));
+				{
+					if( serverGlobalParams.nativeTypeRestriction )
+						return Value(static_cast<double>(numberLong));
+					else
+						return Value(numberLong);
+				}
 				else
 					return (use_nan ? Value(std::nan("NaN")) : Value(0));
 			}
@@ -4044,8 +4058,12 @@ Value ExpressionToDate::evaluateInternal(Variables* vars) const {
 	switch (pDate.getType())
 	{
 		case Date:
+			if( serverGlobalParams.nativeTypeRestriction )
+				return Value(pDate.coerceToDouble());
 			return pDate;
 		default:
+			if( serverGlobalParams.nativeTypeRestriction )
+				return Value(static_cast<double>(pDate.coerceToLong())); // long to get millis and then to double
 			return Value(Date_t::fromMillisSinceEpoch(pDate.coerceToDate()));
 	}
 }
@@ -4062,8 +4080,8 @@ Value ExpressionRoundDate::evaluateInternal(Variables* vars) const {
 	Value pMode(vpOperand[1]->evaluateInternal(vars));
 	
 	uassert(40640,
-            str::stream() << "$roundDate requires an expression that evaluates to a string as a second "
-                             "argument, found: "
+            str::stream() << "$roundDate requires an expression that evaluates to a string as a second argument"
+                             ", found: "
                           << typeName(pMode.getType()),
             pMode.getType() == BSONType::String);
 	
@@ -4116,13 +4134,20 @@ Value ExpressionNaN::evaluateInternal(Variables* vars) const {
 	switch (pNaN.getType())
 	{
 		case NumberDouble:
-        case NumberInt:
-        case NumberLong:
         case NumberDecimal:
 			return Value(std::isnan(pNaN.coerceToDouble()));
-		case Bool: // bool can always be converted to 0 or 1
+		case NumberInt:
+        case NumberLong:
+		case Date:
+        case Bool:
 			return Value(false); 
 		case String:
+			if( serverGlobalParams.implicitTypeConversion )
+			{
+				double number = 0;
+				if (parseNumberFromString<double>(pNaN.coerceToString(), &number).isOK())
+					return Value(std::isnan(number));
+			}
 			return Value(Value::compare(pNaN, Value(std::nan("NaN")), nullptr) <= 0 ? true : false);
 		default: // everything else is NaN
             return Value(true);

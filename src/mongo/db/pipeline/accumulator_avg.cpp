@@ -36,6 +36,7 @@
 #include "mongo/db/pipeline/expression_context.h"
 #include "mongo/db/pipeline/value.h"
 #include "mongo/platform/decimal128.h"
+#include "mongo/db/server_options.h"
 
 namespace mongo {
 
@@ -74,7 +75,7 @@ void AccumulatorAvg::processInternal(const Value& input, bool merging) {
 
     switch (input.getType()) {
         case NumberDecimal:
-            if( std::isnan(input.coerceToDouble()) ) _count--; // ignore value
+            if( serverGlobalParams.implicitTypeConversion && std::isnan(input.coerceToDouble()) ) _count--; // ignore value
 			else 
 			{
 				_decimalTotal = _decimalTotal.add(input.getDecimal());
@@ -83,28 +84,38 @@ void AccumulatorAvg::processInternal(const Value& input, bool merging) {
             break;
         case NumberLong:
             // Avoid summation using double as that loses precision.
-            if( std::isnan(input.coerceToDouble()) ) _count--; // ignore value
-			else _nonDecimalTotal.addLong(input.getLong());
+            _nonDecimalTotal.addLong(input.getLong());
             break;
         case NumberInt:
         case NumberDouble:
-			if( std::isnan(input.coerceToDouble()) ) _count--; // ignore value
+			if( serverGlobalParams.implicitTypeConversion && std::isnan(input.coerceToDouble()) ) _count--; // ignore value
 			else _nonDecimalTotal.addDouble(input.getDouble());
             break;
 		case Bool:
-			_nonDecimalTotal.addDouble(input.getBool() ? 1 : 0);
-			break;
-		case String: {
-			double number = 0;
-			if (parseNumberFromString<double>(input.coerceToString(), &number).isOK())
-				_nonDecimalTotal.addDouble(number);
+			if( serverGlobalParams.implicitTypeConversion )
+				_nonDecimalTotal.addDouble(input.getBool() ? 1 : 0);
 			else
-				_count--; // ignore value
-		}
+				dassert(!input.numeric());
+			break;
+		case String:
+			if( serverGlobalParams.implicitTypeConversion )
+			{
+				double number = 0;
+				if (parseNumberFromString<double>(input.coerceToString(), &number).isOK() && !std::isnan(number))
+					_nonDecimalTotal.addDouble(number);
+				else
+					_count--; // ignore value
+			}
+			else
+				dassert(!input.numeric());
+			break;
 		case EOO:
         case jstNULL:
         case Undefined:
-			_count--; // ignore value
+			if( serverGlobalParams.implicitTypeConversion )
+				_count--; // ignore value
+			else
+				dassert(!input.numeric());
 			break;
         default:
             dassert(!input.numeric());

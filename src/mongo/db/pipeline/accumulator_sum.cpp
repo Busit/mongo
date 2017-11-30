@@ -37,6 +37,7 @@
 #include "mongo/db/pipeline/expression.h"
 #include "mongo/db/pipeline/value.h"
 #include "mongo/util/summation.h"
+#include "mongo/db/server_options.h"
 
 namespace mongo {
 
@@ -56,10 +57,13 @@ const char subTotalErrorName[] = "subTotalError";  // Used for extra precision.
 
 
 void AccumulatorSum::processInternal(const Value& input, bool merging) {
-	if (input.nullish()) return;
-	if (input.numeric() && std::isnan(input.coerceToDouble())) return;
+	if( serverGlobalParams.implicitTypeConversion )
+	{
+		if (input.nullish()) return;
+		if (input.numeric() && std::isnan(input.coerceToDouble())) return;
+	}
 	
-    if (!input.numeric() && input.getType() != String && input.getType() != Bool) {
+    if (!input.numeric() || (serverGlobalParams.implicitTypeConversion && input.getType() != String && input.getType() != Bool)) {
         if (merging && input.getType() == Object) {
             // Process merge document, see getValue() below.
             nonDecimalTotal.addDouble(
@@ -83,14 +87,21 @@ void AccumulatorSum::processInternal(const Value& input, bool merging) {
             decimalTotal = decimalTotal.add(input.coerceToDecimal());
             break;
 		case Bool:
-			nonDecimalTotal.addDouble(input.getBool() ? 1.0 : 0.0);
+			if( serverGlobalParams.implicitTypeConversion )
+				nonDecimalTotal.addDouble(input.getBool() ? 1.0 : 0.0);
+			else
+				MONGO_UNREACHABLE;
             break;
-		case String: {
-			double number = 0;
-			if (parseNumberFromString<double>(input.coerceToString(), &number).isOK())
-				nonDecimalTotal.addDouble(number);
+		case String:
+			if( serverGlobalParams.implicitTypeConversion )
+			{
+				double number = 0;
+				if (parseNumberFromString<double>(input.coerceToString(), &number).isOK())
+					nonDecimalTotal.addDouble(number);
+			}
+			else
+				MONGO_UNREACHABLE;
 			break;
-		}
         default:
             MONGO_UNREACHABLE;
     }
@@ -128,7 +139,6 @@ Value AccumulatorSum::getValue(bool toBeMerged) const {
             // Sum doesn't fit a NumberLong, so return a NumberDouble instead.
             return Value(nonDecimalTotal.getDouble());
 
-		default:
         case NumberDouble:
             return Value(nonDecimalTotal.getDouble());
         case NumberDecimal: {
@@ -142,6 +152,10 @@ Value AccumulatorSum::getValue(bool toBeMerged) const {
             total = total.add(decimalTotal);
             return Value(total);
         }
+        default:
+			if( serverGlobalParams.implicitTypeConversion )
+				return Value(nonDecimalTotal.getDouble());
+            MONGO_UNREACHABLE;
     }
 }
 

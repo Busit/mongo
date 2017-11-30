@@ -45,6 +45,7 @@
 #include "mongo/util/intrusive_counter.h"
 #include "mongo/util/mongoutils/str.h"
 #include "mongo/util/string_map.h"
+#include "mongo/db/server_options.h"
 
 namespace mongo {
 
@@ -484,7 +485,7 @@ public:
         Value arg = this->vpOperand[0]->evaluateInternal(vars);
         if (arg.nullish())
             return Value(BSONNULL);
-		if( !arg.numeric() )
+		if( serverGlobalParams.implicitTypeConversion && !arg.numeric() )
 			return evaluateNumericArg(Value(arg.coerceToDouble()));
 
         uassert(28765,
