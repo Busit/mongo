@@ -35,6 +35,8 @@
 #include "mongo/rpc/object_check.h"
 #include "mongo/transport/session.h"
 #include "mongo/db/server_options.h"
+#include "mongo/bson/mutable/document.h"
+#include "mongo/bson/mutable/element.h"
 
 namespace mongo {
 

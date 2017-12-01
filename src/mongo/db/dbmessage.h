@@ -38,6 +38,8 @@
 #include "mongo/transport/session.h"
 #include "mongo/util/net/abstract_message_port.h"
 #include "mongo/util/net/message.h"
+#include "mongo/bson/mutable/document.h"
+#include "mongo/bson/mutable/element.h"
 
 namespace mongo {
 
