@@ -253,7 +253,7 @@ public:
     BSONObj nextJsObj();
 	
 	BSONObj restrictNativeTypes(const BSONObj& bson);
-	BSONObj restrictNativeTypes_recursive(mongo::mutablebson::Element& parent);
+	void restrictNativeTypes_recursive(mongo::mutablebson::Element& parent);
 
     const Message& msg() const {
         return _msg;

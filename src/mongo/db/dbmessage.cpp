@@ -151,11 +151,11 @@ BSONObj DbMessage::nextJsObj() {
 
 BSONObj DbMessage::restrictNativeTypes(const BSONObj& bson) {
 	mongo::mutablebson::Document doc(bson);
-	restrictNativeTypes_recursive(e.root());
+	restrictNativeTypes_recursive(doc.root());
 	return doc.getObject();
 }
 
-BSONObj DbMessage::restrictNativeTypes_recursive(mongo::mutablebson::Element& parent) {
+void DbMessage::restrictNativeTypes_recursive(mongo::mutablebson::Element& parent) {
 	
 	if( parent.hasChildren() )
 	{
