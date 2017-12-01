@@ -151,14 +151,7 @@ BSONObj DbMessage::nextJsObj() {
 
 BSONObj DbMessage::restrictNativeTypes(const BSONObj& bson) {
 	mongo::mutablebson::Document doc(bson);
-
-	size_t count = doc.countChildren();
-	for( size_t i = 0; i < count; i++ )
-	{
-		mongo::mutablebson::Element e = doc.findNthChild(i);
-		restrictNativeTypes_recursive(e);
-	}
-
+	restrictNativeTypes_recursive(e.root());
 	return doc.getObject();
 }
 
@@ -178,11 +171,13 @@ BSONObj DbMessage::restrictNativeTypes_recursive(mongo::mutablebson::Element& pa
 	switch( parent.getType() )
 	{
 		case Date:
-			parent.setValueDouble(static_cast<double>(e.getValue().date().toMillisSinceEpoch()));
+			parent.setValueDouble(static_cast<double>(parent.getValue().date().toMillisSinceEpoch()));
 			break;
 		case NumberLong: 
 		case NumberDecimal:
 			parent.setValueDouble(parent.getValue().number());
+			break;
+		default: // no type restriction for other types or no mapping known
 			break;
 	}
 }
