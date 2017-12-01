@@ -694,7 +694,7 @@ Status canonicalizeServerOptions(moe::Environment* params) {
     // "implicitConversion" is set since that comes from the command line.
     if (params->count("implicitConversion")) {
         Status ret = params->set("opt.implicitConversion.enabled",
-                                 moe::Value(!(*params)["implicitConversion"].as<bool>()));
+                                 moe::Value((*params)["implicitConversion"].as<bool>()));
         if (!ret.isOK()) {
             return ret;
         }
@@ -708,7 +708,7 @@ Status canonicalizeServerOptions(moe::Environment* params) {
     // "nativeTypeRestriction" is set since that comes from the command line.
     if (params->count("nativeTypeRestriction")) {
         Status ret = params->set("opt.nativeTypeRestriction.enabled",
-                                 moe::Value(!(*params)["nativeTypeRestriction"].as<bool>()));
+                                 moe::Value((*params)["nativeTypeRestriction"].as<bool>()));
         if (!ret.isOK()) {
             return ret;
         }
