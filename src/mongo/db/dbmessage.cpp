@@ -155,7 +155,7 @@ BSONObj DbMessage::restrictNativeTypes(const BSONObj& bson) {
 	return doc.getObject();
 }
 
-void DbMessage::restrictNativeTypes_recursive(mongo::mutablebson::Element& parent) {
+void DbMessage::restrictNativeTypes_recursive(mongo::mutablebson::Element parent) {
 	
 	if( parent.hasChildren() )
 	{
