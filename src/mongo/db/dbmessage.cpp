@@ -34,6 +34,7 @@
 #include "mongo/platform/strnlen.h"
 #include "mongo/rpc/object_check.h"
 #include "mongo/transport/session.h"
+#include "mongo/db/server_options.h"
 
 namespace mongo {
 
@@ -140,7 +141,48 @@ BSONObj DbMessage::nextJsObj() {
     _nextjsobj += js.objsize();
     if (_nextjsobj >= _theEnd)
         _nextjsobj = NULL;
+	
+	if( serverGlobalParams.nativeTypeRestriction )
+		js = restrictNativeTypes(js);
     return js;
+}
+
+BSONObj DbMessage::restrictNativeTypes(const BSONObj& bson) {
+	mongo::mutablebson::Document doc(bson);
+
+	size_t count = doc.countChildren();
+	for( size_t i = 0; i < count; i++ )
+	{
+		mongo::mutablebson::Element e = doc.findNthChild(i);
+		restrictNativeTypes_recursive(e);
+	}
+
+	return doc.getObject();
+}
+
+BSONObj DbMessage::restrictNativeTypes_recursive(mongo::mutablebson::Element& parent) {
+	
+	if( parent.hasChildren() )
+	{
+		size_t count = parent.countChildren();
+		for( size_t i = 0; i < count; i++ )
+		{
+			mongo::mutablebson::Element e = parent.findNthChild(i);
+			restrictNativeTypes_recursive(e);
+		}
+		return;
+	}
+	
+	switch( parent.getType() )
+	{
+		case Date:
+			parent.setValueDouble(static_cast<double>(e.getValue().date().toMillisSinceEpoch()));
+			break;
+		case NumberLong: 
+		case NumberDecimal:
+			parent.setValueDouble(parent.getValue().number());
+			break;
+	}
 }
 
 void DbMessage::markReset(const char* toMark = NULL) {

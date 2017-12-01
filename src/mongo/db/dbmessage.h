@@ -249,6 +249,9 @@ public:
     }
 
     BSONObj nextJsObj();
+	
+	BSONObj restrictNativeTypes(const BSONObj& bson);
+	BSONObj DbMessage::restrictNativeTypes_recursive(mongo::mutablebson::Document& doc);
 
     const Message& msg() const {
         return _msg;
