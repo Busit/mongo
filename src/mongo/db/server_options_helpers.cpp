@@ -182,6 +182,26 @@ Status addGeneralServerOptions(moe::OptionSection* options) {
 
     options->addOptionChaining("systemLog.quiet", "quiet", moe::Switch, "quieter output");
 
+	options
+        ->addOptionChaining(
+            "implicitTypeConversion", "implicitTypeConversion", moe::Switch, "perform implicit type conversion on on left operand to match right operand")
+        .setSources(moe::SourceAllLegacy);
+
+    options
+        ->addOptionChaining(
+            "opt.implicitTypeConversion.enabled", "", moe::Bool, "perform implicit type conversion on on left operand to match right operand")
+        .setSources(moe::SourceYAMLConfig);
+	
+	options
+        ->addOptionChaining(
+            "nativeTypeRestriction", "nativeTypeRestriction", moe::Switch, "restrict internal data representation to JSON compatible types")
+        .setSources(moe::SourceAllLegacy);
+
+    options
+        ->addOptionChaining(
+            "opt.nativeTypeRestriction.enabled", "", moe::Bool, "restrict internal data representation to JSON compatible types")
+        .setSources(moe::SourceYAMLConfig);
+
     options->addOptionChaining("net.port", "port", moe::Int, portInfoBuilder.str().c_str());
 
     options->addOptionChaining(
@@ -315,27 +335,7 @@ Status addGeneralServerOptions(moe::OptionSection* options) {
         .format("(:?keyFile)|(:?sendKeyFile)|(:?sendX509)|(:?x509)",
                 "(keyFile/sendKeyFile/sendX509/x509)");
 
-#ifndef _WIN32
-	options
-        ->addOptionChaining(
-            "implicitConversion", "implicitConversion", moe::Switch, "perform implicit type conversion on on left operand to match right operand")
-        .setSources(moe::SourceAllLegacy);
-
-    options
-        ->addOptionChaining(
-            "opt.implicitConversion.enabled", "", moe::Bool, "perform implicit type conversion on on left operand to match right operand")
-        .setSources(moe::SourceYAMLConfig);
-	
-	options
-        ->addOptionChaining(
-            "nativeTypeRestriction", "nativeTypeRestriction", moe::Switch, "restrict internal data representation to JSON compatible types")
-        .setSources(moe::SourceAllLegacy);
-
-    options
-        ->addOptionChaining(
-            "opt.nativeTypeRestriction.enabled", "", moe::Bool, "restrict internal data representation to JSON compatible types")
-        .setSources(moe::SourceYAMLConfig);
-		
+#ifndef _WIN32	
     options
         ->addOptionChaining(
             "nounixsocket", "nounixsocket", moe::Switch, "disable listening on unix sockets")
@@ -690,15 +690,15 @@ Status canonicalizeServerOptions(moe::Environment* params) {
         }
     }
 	
-	// "opt.implicitConversion.enabled" comes from the config file, so override it if
-    // "implicitConversion" is set since that comes from the command line.
-    if (params->count("implicitConversion")) {
-        Status ret = params->set("opt.implicitConversion.enabled",
-                                 moe::Value((*params)["implicitConversion"].as<bool>()));
+	// "opt.implicitTypeConversion.enabled" comes from the config file, so override it if
+    // "implicitTypeConversion" is set since that comes from the command line.
+    if (params->count("implicitTypeConversion")) {
+        Status ret = params->set("opt.implicitTypeConversion.enabled",
+                                 moe::Value((*params)["implicitTypeConversion"].as<bool>()));
         if (!ret.isOK()) {
             return ret;
         }
-        ret = params->remove("implicitConversion");
+        ret = params->remove("implicitTypeConversion");
         if (!ret.isOK()) {
             return ret;
         }
@@ -872,18 +872,12 @@ Status storeServerOptions(const moe::Environment& params) {
 
 	if (params.count("opt.implicitTypeConversion.enabled")) {
         serverGlobalParams.implicitTypeConversion = params["opt.implicitTypeConversion.enabled"].as<bool>();
-		error() << "SET SERVER OPTION opt.implicitTypeConversion.enabled to " << serverGlobalParams.implicitTypeConversion; 
     }
-	else
-		error() << "SERVER OPTION opt.implicitTypeConversion.enabled NOT SPECIFIED";
-	
+
 	if (params.count("opt.nativeTypeRestriction.enabled")) {
         serverGlobalParams.nativeTypeRestriction = params["opt.nativeTypeRestriction.enabled"].as<bool>();
-		error() << "SET SERVER OPTION opt.nativeTypeRestriction.enabled to " << serverGlobalParams.nativeTypeRestriction; 
     }
-	else
-		error() << "SERVER OPTION opt.nativeTypeRestriction.enabled NOT SPECIFIED";
-	
+
     if (params.count("net.port")) {
         serverGlobalParams.port = params["net.port"].as<int>();
     }
