@@ -516,6 +516,8 @@ private:
     const Element _root;
 };
 
+BSONObj restrictNativeBSONTypes(const BSONObj& bson);
+
 }  // namespace mutablebson
 }  // namespace mongo
 

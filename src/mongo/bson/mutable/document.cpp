@@ -2664,5 +2664,39 @@ inline const Document::Impl& Document::getImpl() const {
     return *_impl.get();
 }
 
+void restrictNativeBSONTypes_recursive(Element parent)
+{
+	if( parent.hasChildren() )
+	{
+		size_t count = parent.countChildren();
+		for( size_t i = 0; i < count; i++ )
+		{
+			Element e = parent.findNthChild(i);
+			restrictNativeTypes_recursive(e);
+		}
+		return;
+	}
+	
+	switch( parent.getType() )
+	{
+		case Date:
+			parent.setValueDouble(static_cast<double>(parent.getValue().date().toMillisSinceEpoch()));
+			break;
+		case NumberLong: 
+		case NumberDecimal:
+			parent.setValueDouble(parent.getValue().number());
+			break;
+		default: // no type restriction for other types or no mapping known
+			break;
+	}
+}
+
+BSONObj restrictNativeBSONTypes(const BSONObj& bson)
+{
+	Document doc(bson);
+	restrictNativeBSONTypes_recursive(doc.root());
+	return doc.getObject();
+}
+
 }  // namespace mutablebson
 }  // namespace mongo

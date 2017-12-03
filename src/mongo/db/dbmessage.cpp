@@ -37,8 +37,6 @@
 #include "mongo/transport/session.h"
 #include "mongo/db/server_options.h"
 #include "mongo/bson/mutable/document.h"
-#include "mongo/bson/mutable/element.h"
-#include "mongo/util/log.h"
 
 namespace mongo {
 
@@ -147,45 +145,8 @@ BSONObj DbMessage::nextJsObj() {
         _nextjsobj = NULL;
 	
 	if( serverGlobalParams.nativeTypeRestriction )
-		js = restrictNativeTypes(js);
+		js = restrictNativeBSONTypes(js);
     return js;
-}
-
-BSONObj DbMessage::restrictNativeTypes(const BSONObj& bson) {
-	mongo::mutablebson::Document doc(bson);
-	log() << "restricting types for " << doc.toString();
-	restrictNativeTypes_recursive(doc.root());
-	log() << "restricted types result " << doc.toString();
-	return doc.getObject();
-}
-
-void DbMessage::restrictNativeTypes_recursive(mongo::mutablebson::Element parent) {
-	
-	if( parent.hasChildren() )
-	{
-		size_t count = parent.countChildren();
-		for( size_t i = 0; i < count; i++ )
-		{
-			mongo::mutablebson::Element e = parent.findNthChild(i);
-			restrictNativeTypes_recursive(e);
-		}
-		return;
-	}
-	
-	switch( parent.getType() )
-	{
-		case Date:
-			log() << "restricted type Date in " << parent.getFieldName();
-			parent.setValueDouble(static_cast<double>(parent.getValue().date().toMillisSinceEpoch()));
-			break;
-		case NumberLong: 
-		case NumberDecimal:
-			log() << "restricted numeric type in " << parent.getFieldName();
-			parent.setValueDouble(parent.getValue().number());
-			break;
-		default: // no type restriction for other types or no mapping known
-			break;
-	}
 }
 
 void DbMessage::markReset(const char* toMark = NULL) {
