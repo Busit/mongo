@@ -662,6 +662,7 @@ void assembleResponse(OperationContext* txn,
                 if (!nsString.isValid()) {
                     uassert(16257, str::stream() << "Invalid ns [" << ns << "]", false);
                 } else if (op == dbInsert) {
+					log() << "DEBUG --- INSERT VIA LEGACY";
                     receivedInsert(txn, nsString, m);
                 } else if (op == dbUpdate) {
                     receivedUpdate(txn, nsString, m);
