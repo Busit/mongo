@@ -113,6 +113,7 @@
 #include "mongo/util/md5.hpp"
 #include "mongo/util/print.h"
 #include "mongo/util/scopeguard.h"
+#include "mongo/db/server_options.h"
 
 namespace mongo {
 
@@ -1505,8 +1506,10 @@ bool Command::run(OperationContext* txn,
 
     // run expects non-const bsonobj
     BSONObj cmd = request.getCommandArgs();
-	cmd = mutablebson::restrictNativeBSONTypes(cmd);
-	log() << "DEBUG COMMAND RUN POINT RESTRICTED : " << cmd;
+	log() << "serverGlobalParams.nativeTypeRestriction : " << serverGlobalParams.nativeTypeRestriction;
+	log() << "serverGlobalParams.implicitTypeConversion : " << serverGlobalParams.implicitTypeConversion;
+	if( serverGlobalParams.nativeTypeRestriction )
+		cmd = mutablebson::restrictNativeBSONTypes(cmd);
 
     // run expects const db std::string (can't bind to temporary)
     const std::string db = request.getDatabase().toString();
