@@ -189,7 +189,7 @@ Status addGeneralServerOptions(moe::OptionSection* options) {
 
     options
         ->addOptionChaining(
-            "opt.implicitTypeConversion.enabled", "", moe::Bool, "perform implicit type conversion on on left operand to match right operand")
+            "busit.implicitTypeConversion.enabled", "", moe::Bool, "perform implicit type conversion on on left operand to match right operand")
         .setSources(moe::SourceYAMLConfig);
 	
 	options
@@ -199,7 +199,7 @@ Status addGeneralServerOptions(moe::OptionSection* options) {
 
     options
         ->addOptionChaining(
-            "opt.nativeTypeRestriction.enabled", "", moe::Bool, "restrict internal data representation to JSON compatible types")
+            "busit.nativeTypeRestriction.enabled", "", moe::Bool, "restrict internal data representation to JSON compatible types")
         .setSources(moe::SourceYAMLConfig);
 
     options->addOptionChaining("net.port", "port", moe::Int, portInfoBuilder.str().c_str());
@@ -690,10 +690,10 @@ Status canonicalizeServerOptions(moe::Environment* params) {
         }
     }
 	
-	// "opt.implicitTypeConversion.enabled" comes from the config file, so override it if
+	// "busit.implicitTypeConversion.enabled" comes from the config file, so override it if
     // "implicitTypeConversion" is set since that comes from the command line.
     if (params->count("implicitTypeConversion")) {
-        Status ret = params->set("opt.implicitTypeConversion.enabled",
+        Status ret = params->set("busit.implicitTypeConversion.enabled",
                                  moe::Value((*params)["implicitTypeConversion"].as<bool>()));
         if (!ret.isOK()) {
             return ret;
@@ -704,10 +704,10 @@ Status canonicalizeServerOptions(moe::Environment* params) {
         }
     }
 	
-	// "opt.nativeTypeRestriction.enabled" comes from the config file, so override it if
+	// "busit.nativeTypeRestriction.enabled" comes from the config file, so override it if
     // "nativeTypeRestriction" is set since that comes from the command line.
     if (params->count("nativeTypeRestriction")) {
-        Status ret = params->set("opt.nativeTypeRestriction.enabled",
+        Status ret = params->set("busit.nativeTypeRestriction.enabled",
                                  moe::Value((*params)["nativeTypeRestriction"].as<bool>()));
         if (!ret.isOK()) {
             return ret;
@@ -870,12 +870,12 @@ Status storeServerOptions(const moe::Environment& params) {
             params["enableExperimentalStorageDetailsCmd"].as<bool>();
     }
 
-	if (params.count("opt.implicitTypeConversion.enabled")) {
-        serverGlobalParams.implicitTypeConversion = params["opt.implicitTypeConversion.enabled"].as<bool>();
+	if (params.count("busit.implicitTypeConversion.enabled")) {
+        serverGlobalParams.implicitTypeConversion = params["busit.implicitTypeConversion.enabled"].as<bool>();
     }
 
-	if (params.count("opt.nativeTypeRestriction.enabled")) {
-        serverGlobalParams.nativeTypeRestriction = params["opt.nativeTypeRestriction.enabled"].as<bool>();
+	if (params.count("busit.nativeTypeRestriction.enabled")) {
+        serverGlobalParams.nativeTypeRestriction = params["busit.nativeTypeRestriction.enabled"].as<bool>();
     }
 
     if (params.count("net.port")) {
