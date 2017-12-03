@@ -145,7 +145,7 @@ BSONObj DbMessage::nextJsObj() {
         _nextjsobj = NULL;
 	
 	if( serverGlobalParams.nativeTypeRestriction )
-		js = restrictNativeBSONTypes(js);
+		js = mutablebson::restrictNativeBSONTypes(js);
     return js;
 }
 

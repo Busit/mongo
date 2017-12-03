@@ -1505,7 +1505,7 @@ bool Command::run(OperationContext* txn,
 
     // run expects non-const bsonobj
     BSONObj cmd = request.getCommandArgs();
-	cmd = restrictNativeBSONTypes(cmd);
+	cmd = mutablebson::restrictNativeBSONTypes(cmd);
 	log() << "DEBUG COMMAND RUN POINT RESTRICTED : " << cmd;
 
     // run expects const db std::string (can't bind to temporary)
