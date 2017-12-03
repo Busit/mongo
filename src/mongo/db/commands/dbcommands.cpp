@@ -1506,8 +1506,6 @@ bool Command::run(OperationContext* txn,
 
     // run expects non-const bsonobj
     BSONObj cmd = request.getCommandArgs();
-	log() << "serverGlobalParams.nativeTypeRestriction : " << serverGlobalParams.nativeTypeRestriction;
-	log() << "serverGlobalParams.implicitTypeConversion : " << serverGlobalParams.implicitTypeConversion;
 	if( serverGlobalParams.nativeTypeRestriction )
 		cmd = mutablebson::restrictNativeBSONTypes(cmd);
 
