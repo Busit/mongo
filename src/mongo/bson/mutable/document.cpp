@@ -2672,7 +2672,7 @@ void restrictNativeBSONTypes_recursive(Element parent)
 		for( size_t i = 0; i < count; i++ )
 		{
 			Element e = parent.findNthChild(i);
-			restrictNativeTypes_recursive(e);
+			restrictNativeBSONTypes_recursive(e);
 		}
 		return;
 	}
