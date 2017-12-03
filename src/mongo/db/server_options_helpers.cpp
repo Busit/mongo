@@ -944,10 +944,10 @@ Status storeServerOptions(const moe::Environment& params) {
     }
 
 	if (params.count("opt.implicitTypeConversion.enabled")) {
-        serverGlobalParams.implicitTypeConversion = !params["opt.implicitTypeConversion.enabled"].as<bool>();
+        serverGlobalParams.implicitTypeConversion = params["opt.implicitTypeConversion.enabled"].as<bool>();
     }
 	if (params.count("opt.nativeTypeRestriction.enabled")) {
-        serverGlobalParams.nativeTypeRestriction = !params["opt.nativeTypeRestriction.enabled"].as<bool>();
+        serverGlobalParams.nativeTypeRestriction = params["opt.nativeTypeRestriction.enabled"].as<bool>();
     }
 	
     if (params.count("net.unixDomainSocket.enabled")) {

@@ -53,7 +53,7 @@ struct ServerGlobalParams {
     bool jsonp = false;   // --jsonp
 	
 	bool implicitTypeConversion = false; // --implicitConversion
-	bool nativeTypeRestriction = true; // --nativeTypeRestriction
+	bool nativeTypeRestriction = false; // --nativeTypeRestriction
 
     bool indexBuildRetry = true;  // --noIndexBuildRetry
 
