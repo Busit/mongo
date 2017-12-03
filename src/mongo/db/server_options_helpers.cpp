@@ -945,10 +945,17 @@ Status storeServerOptions(const moe::Environment& params) {
 
 	if (params.count("opt.implicitTypeConversion.enabled")) {
         serverGlobalParams.implicitTypeConversion = params["opt.implicitTypeConversion.enabled"].as<bool>();
+		log() << "SET SERVER OPTION opt.implicitTypeConversion.enabled to " << serverGlobalParams.implicitTypeConversion; 
     }
+	else
+		log() << "SERVER OPTION opt.implicitTypeConversion.enabled NOT SPECIFIED";
+	
 	if (params.count("opt.nativeTypeRestriction.enabled")) {
         serverGlobalParams.nativeTypeRestriction = params["opt.nativeTypeRestriction.enabled"].as<bool>();
+		log() << "SET SERVER OPTION opt.nativeTypeRestriction.enabled to " << serverGlobalParams.nativeTypeRestriction; 
     }
+	else
+		log() << "SERVER OPTION opt.nativeTypeRestriction.enabled NOT SPECIFIED";
 	
     if (params.count("net.unixDomainSocket.enabled")) {
         serverGlobalParams.noUnixSocket = !params["net.unixDomainSocket.enabled"].as<bool>();
