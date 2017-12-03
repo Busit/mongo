@@ -1505,6 +1505,7 @@ bool Command::run(OperationContext* txn,
 
     // run expects non-const bsonobj
     BSONObj cmd = request.getCommandArgs();
+	log() << "DEBUG COMMAND RUN POINT";
 
     // run expects const db std::string (can't bind to temporary)
     const std::string db = request.getDatabase().toString();
