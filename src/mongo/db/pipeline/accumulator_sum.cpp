@@ -63,7 +63,7 @@ void AccumulatorSum::processInternal(const Value& input, bool merging) {
 		if (input.numeric() && std::isnan(input.coerceToDouble())) return;
 	}
 	
-    if (!input.numeric() || (serverGlobalParams.implicitTypeConversion && input.getType() != String && input.getType() != Bool)) {
+    if (!input.numeric() && (!serverGlobalParams.implicitTypeConversion || (input.getType() != String && input.getType() != Bool && input.getType() != Date))) {
         if (merging && input.getType() == Object) {
             // Process merge document, see getValue() below.
             nonDecimalTotal.addDouble(
@@ -86,6 +86,12 @@ void AccumulatorSum::processInternal(const Value& input, bool merging) {
         case NumberDecimal:
             decimalTotal = decimalTotal.add(input.coerceToDecimal());
             break;
+		case Date:
+			if( serverGlobalParams.implicitTypeConversion )
+				nonDecimalTotal.addDouble(input.coerceToDouble());
+			else
+				MONGO_UNREACHABLE;
+            break;
 		case Bool:
 			if( serverGlobalParams.implicitTypeConversion )
 				nonDecimalTotal.addDouble(input.getBool() ? 1.0 : 0.0);
@@ -96,8 +102,10 @@ void AccumulatorSum::processInternal(const Value& input, bool merging) {
 			if( serverGlobalParams.implicitTypeConversion )
 			{
 				double number = 0;
-				if (parseNumberFromString<double>(input.coerceToString(), &number).isOK())
+				if (parseNumberFromString<double>(input.coerceToString(), &number).isOK() && !std::isnan(number))
 					nonDecimalTotal.addDouble(number);
+				else
+					return;
 			}
 			else
 				MONGO_UNREACHABLE;

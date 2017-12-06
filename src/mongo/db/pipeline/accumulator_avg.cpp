@@ -91,6 +91,12 @@ void AccumulatorAvg::processInternal(const Value& input, bool merging) {
 			if( serverGlobalParams.implicitTypeConversion && std::isnan(input.coerceToDouble()) ) _count--; // ignore value
 			else _nonDecimalTotal.addDouble(input.getDouble());
             break;
+		case Date:
+			if( serverGlobalParams.implicitTypeConversion )
+				_nonDecimalTotal.addDouble(input.coerceToDouble());
+			else
+				dassert(!input.numeric());
+			break;
 		case Bool:
 			if( serverGlobalParams.implicitTypeConversion )
 				_nonDecimalTotal.addDouble(input.getBool() ? 1 : 0);
