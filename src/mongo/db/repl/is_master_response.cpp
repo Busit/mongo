@@ -413,6 +413,17 @@ Status IsMasterResponse::initialize(const BSONObj& doc) {
         }
         if (auto lastWriteDateElement = lastWriteObj[kLastWriteDateFieldName]) {
             if (lastWriteDateElement.type() != Date) {
+				if(lastWriteDateElement.isNumber())
+				{
+					if (_lastMajorityWrite) {
+						_lastMajorityWrite->value = Date_t::fromMillisSinceEpoch(lastWriteDateElement.safeNumberLong()).toTimeT();
+					} else {
+						_lastMajorityWrite =
+							OpTimeWith<time_t>(Date_t::fromMillisSinceEpoch(lastWriteDateElement.safeNumberLong()).toTimeT(), OpTime());
+					}
+				}
+				else
+				{
                 return Status(ErrorCodes::TypeMismatch,
                               str::stream() << "Elements in \"" << kLastWriteDateFieldName
                                             << "\" obj "
@@ -420,6 +431,7 @@ Status IsMasterResponse::initialize(const BSONObj& doc) {
                                             << typeName(Date)
                                             << " but found type "
                                             << typeName(lastWriteDateElement.type()));
+				}
             }
             if (_lastWrite) {
                 _lastWrite->value = lastWriteDateElement.Date().toTimeT();
@@ -456,6 +468,17 @@ Status IsMasterResponse::initialize(const BSONObj& doc) {
         }
         if (auto lastMajorityWriteDateElement = lastWriteObj[kLastMajorityWriteDateFieldName]) {
             if (lastMajorityWriteDateElement.type() != Date) {
+				if(lastMajorityWriteDateElement.isNumber())
+				{
+					if (_lastMajorityWrite) {
+						_lastMajorityWrite->value = Date_t::fromMillisSinceEpoch(lastMajorityWriteDateElement.safeNumberLong()).toTimeT();
+					} else {
+						_lastMajorityWrite =
+							OpTimeWith<time_t>(Date_t::fromMillisSinceEpoch(lastMajorityWriteDateElement.safeNumberLong()).toTimeT(), OpTime());
+					}
+				}
+				else
+				{
                 return Status(ErrorCodes::TypeMismatch,
                               str::stream() << "Elements in \"" << kLastMajorityWriteDateFieldName
                                             << "\" obj "
@@ -463,6 +486,7 @@ Status IsMasterResponse::initialize(const BSONObj& doc) {
                                             << typeName(Date)
                                             << " but found type "
                                             << typeName(lastMajorityWriteDateElement.type()));
+				}
             }
             if (_lastMajorityWrite) {
                 _lastMajorityWrite->value = lastMajorityWriteDateElement.Date().toTimeT();

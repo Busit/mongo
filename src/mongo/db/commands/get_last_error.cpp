@@ -165,6 +165,9 @@ public:
         } else if (opTimeElement.type() == Date) {
             lastOpTime =
                 repl::OpTime(Timestamp(opTimeElement.date()), repl::OpTime::kUninitializedTerm);
+        } else if (opTimeElement.isNumber()) {
+            lastOpTime =
+                repl::OpTime(Timestamp(Date_t::fromMillisSinceEpoch(opTimeElement.safeNumberLong())), repl::OpTime::kUninitializedTerm);
         } else if (opTimeElement.type() == Object) {
             Status status = bsonExtractOpTimeField(cmdObj, "wOpTime", &lastOpTime);
             if (!status.isOK()) {

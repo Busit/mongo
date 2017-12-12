@@ -129,12 +129,18 @@ StatusWith<CursorResponse> CursorResponse::parseFromBSON(const BSONObj& cmdRespo
     BSONObj cursorObj = cursorElt.Obj();
 
     BSONElement idElt = cursorObj[kIdField];
-    if (idElt.type() != BSONType::NumberLong) {
+    /*if (idElt.type() != BSONType::NumberLong) {
         return {
             ErrorCodes::TypeMismatch,
             str::stream() << "Field '" << kIdField << "' must be of type long in: " << cmdResponse};
     }
-    cursorId = idElt.Long();
+    cursorId = idElt.Long();*/
+	if (!idElt.isNumber()) {
+        return {
+            ErrorCodes::TypeMismatch,
+            str::stream() << "Field '" << kIdField << "' must be a number in: " << cmdResponse};
+    }
+    cursorId = idElt.safeNumberLong();
 
     BSONElement nsElt = cursorObj[kNsField];
     if (nsElt.type() != BSONType::String) {

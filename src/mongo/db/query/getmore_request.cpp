@@ -114,12 +114,19 @@ StatusWith<GetMoreRequest> GetMoreRequest::parseFromBSON(const std::string& dbna
     for (BSONElement el : cmdObj) {
         const char* fieldName = el.fieldName();
         if (str::equals(fieldName, kGetMoreCommandName)) {
-            if (el.type() != BSONType::NumberLong) {
+            /*if (el.type() != BSONType::NumberLong) {
                 return {ErrorCodes::TypeMismatch,
                         str::stream() << "Field 'getMore' must be of type long in: " << cmdObj};
             }
 
-            cursorid = el.Long();
+            cursorid = el.Long();*/
+			
+			if (!el.isNumber()) {
+                return {ErrorCodes::TypeMismatch,
+                        str::stream() << "Field 'getMore' must be a number in: " << cmdObj};
+            }
+			
+			cursorid = el.safeNumberLong();
         } else if (str::equals(fieldName, kCollectionField)) {
             if (el.type() != BSONType::String) {
                 return {ErrorCodes::TypeMismatch,
@@ -145,11 +152,16 @@ StatusWith<GetMoreRequest> GetMoreRequest::parseFromBSON(const std::string& dbna
                 awaitDataTimeout = Milliseconds(maxAwaitDataTime.getValue());
             }
         } else if (str::equals(fieldName, kTermField)) {
-            if (el.type() != BSONType::NumberLong) {
+            /*if (el.type() != BSONType::NumberLong) {
                 return {ErrorCodes::TypeMismatch,
                         str::stream() << "Field 'term' must be of type NumberLong in: " << cmdObj};
             }
-            term = el.Long();
+            term = el.Long();*/
+			if (!el.isNumber()) {
+                return {ErrorCodes::TypeMismatch,
+                        str::stream() << "Field 'term' must be a number in: " << cmdObj};
+            }
+            term = el.safeNumberLong();
         } else if (str::equals(fieldName, kLastKnownCommittedOpTimeField)) {
             repl::OpTime ot;
             Status status = bsonExtractOpTimeField(el.wrap(), kLastKnownCommittedOpTimeField, &ot);

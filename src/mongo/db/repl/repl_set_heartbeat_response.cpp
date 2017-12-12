@@ -185,6 +185,9 @@ Status ReplSetHeartbeatResponse::initialize(const BSONObj& doc, long long term) 
     } else if (electionTimeElement.type() == Date) {
         _electionTimeSet = true;
         _electionTime = Timestamp(electionTimeElement.date());
+    } else if (electionTimeElement.isNumber()) {
+        _electionTimeSet = true;
+        _electionTime = Timestamp(Date_t::fromMillisSinceEpoch(electionTimeElement.safeNumberLong()));
     } else {
         return Status(ErrorCodes::TypeMismatch,
                       str::stream() << "Expected \"" << kElectionTimeFieldName
@@ -236,6 +239,9 @@ Status ReplSetHeartbeatResponse::initialize(const BSONObj& doc, long long term) 
     } else if (appliedOpTimeElement.type() == Date) {
         _appliedOpTimeSet = true;
         _appliedOpTime = OpTime(Timestamp(appliedOpTimeElement.date()), term);
+    } else if (appliedOpTimeElement.isNumber()) {
+        _electionTimeSet = true;
+        _electionTime = Timestamp(Date_t::fromMillisSinceEpoch(appliedOpTimeElement.safeNumberLong()));
     } else if (appliedOpTimeElement.type() == Object) {
         Status status = bsonExtractOpTimeField(doc, kAppliedOpTimeFieldName, &_appliedOpTime);
         _appliedOpTimeSet = true;
@@ -260,7 +266,8 @@ Status ReplSetHeartbeatResponse::initialize(const BSONObj& doc, long long term) 
     const BSONElement memberStateElement = doc[kMemberStateFieldName];
     if (memberStateElement.eoo()) {
         _stateSet = false;
-    } else if (memberStateElement.type() != NumberInt && memberStateElement.type() != NumberLong) {
+    //} else if (memberStateElement.type() != NumberInt && memberStateElement.type() != NumberLong) {
+	} else if (!memberStateElement.isNumber()) {
         return Status(
             ErrorCodes::TypeMismatch,
             str::stream() << "Expected \"" << kMemberStateFieldName
