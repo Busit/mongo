@@ -76,9 +76,9 @@ public:
     }
 
 private:
-	bool _implicitTypeConversion;
     FieldNamesMode _fieldNamesMode;
     const StringData::ComparatorInterface* _stringComparator;
+	bool _implicitTypeConversion;
 };
 
 }  // namespace mongo

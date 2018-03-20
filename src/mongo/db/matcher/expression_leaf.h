@@ -334,7 +334,7 @@ class InMatchExpression : public LeafMatchExpression {
 public:
     InMatchExpression()
         : LeafMatchExpression(MATCH_IN),
-          _eltCmp(BSONElementComparator(BSONElementComparator::FieldNamesMode::kIgnore, _collator, serverGlobalParams.implicitTypeConversion))
+          _eltCmp(BSONElementComparator(BSONElementComparator::FieldNamesMode::kIgnore, _collator, serverGlobalParams.implicitTypeConversion)),
           _equalitySet(_eltCmp.makeBSONEltFlatSet(_originalEqualityVector)) {}
 
     Status init(StringData path);
