@@ -335,7 +335,7 @@ public:
     InMatchExpression()
         : LeafMatchExpression(MATCH_IN),
           _eltCmp(serverGlobalParams.implicitTypeConversion ? 
-		      BSONElementComparatorImplicit(BSONElementComparatorImplicit::FieldNamesMode::kIgnore, _collator) : 
+		      BSONElementComparatorImplicit(BSONElementComparator::FieldNamesMode::kIgnore, _collator) : 
 		      BSONElementComparator(BSONElementComparator::FieldNamesMode::kIgnore, _collator)),
           _equalitySet(_eltCmp.makeBSONEltFlatSet(_originalEqualityVector)) {}
 
