@@ -728,10 +728,18 @@ bool InMatchExpression::equivalent(const MatchExpression* other) const {
     auto thisEqIt = _equalitySet.begin();
     auto otherEqIt = realOther->_equalitySet.begin();
     for (; thisEqIt != _equalitySet.end(); ++thisEqIt, ++otherEqIt) {
+		if( serverGlobalParams.implicitTypeConversion )
+		{
+			if(compareElementValuesImplicit(thisEqIt, *otherEqIt, _collator))
+				return false;
+		}
+		else
+		{
         const bool considerFieldName = false;
         if (thisEqIt->woCompare(*otherEqIt, considerFieldName, _collator)) {
             return false;
         }
+		}
     }
     invariant(otherEqIt == realOther->_equalitySet.end());
     return true;
