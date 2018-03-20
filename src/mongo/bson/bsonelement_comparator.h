@@ -96,7 +96,7 @@ public:
 		if( considerFieldName )
 			return lhs.woCompare(rhs, considerFieldName, _stringComparator);
 		else
-			return compareElementValuesImplicit(lhs, rhs, _stringComparator)
+			return compareElementValuesImplicit(lhs, rhs, _stringComparator);
     }
 
     void hash_combine(size_t& seed, const BSONElement& toHash) const final {
