@@ -747,7 +747,7 @@ bool InMatchExpression::equivalent(const MatchExpression* other) const {
 
 void InMatchExpression::_doSetCollator(const CollatorInterface* collator) {
     _collator = collator;
-    _eltCmp = BSONElementComparator(BSONElementComparator::FieldNamesMode::kIgnore, _collator);
+    _eltCmp = BSONElementComparator(BSONElementComparator::FieldNamesMode::kIgnore, _collator, serverGlobalParams.implicitTypeConversion);
 
     // We need to re-compute '_equalitySet', since our set comparator has changed.
     _equalitySet = _eltCmp.makeBSONEltFlatSet(_originalEqualityVector);

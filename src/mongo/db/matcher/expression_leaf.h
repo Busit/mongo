@@ -334,9 +334,7 @@ class InMatchExpression : public LeafMatchExpression {
 public:
     InMatchExpression()
         : LeafMatchExpression(MATCH_IN),
-          _eltCmp(serverGlobalParams.implicitTypeConversion ? 
-		      BSONElementComparatorImplicit(BSONElementComparator::FieldNamesMode::kIgnore, _collator) : 
-		      BSONElementComparator(BSONElementComparator::FieldNamesMode::kIgnore, _collator)),
+          _eltCmp(BSONElementComparator(BSONElementComparator::FieldNamesMode::kIgnore, _collator, serverGlobalParams.implicitTypeConversion))
           _equalitySet(_eltCmp.makeBSONEltFlatSet(_originalEqualityVector)) {}
 
     Status init(StringData path);
@@ -391,8 +389,7 @@ private:
     const CollatorInterface* _collator = nullptr;
 
     // Comparator used to compare elements. By default, simple binary comparison will be used.
-    //BSONElementComparator _eltCmp;
-	BSONElement::ComparatorInterface _eltCmp;
+    BSONElementComparator _eltCmp;
 
     // Original container of equality elements, including duplicates. Needed for re-computing
     // '_equalitySet' in case '_collator' changes after elements have been added.

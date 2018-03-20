@@ -55,10 +55,18 @@ public:
      */
     BSONElementComparator(FieldNamesMode fieldNamesMode,
                           const StringData::ComparatorInterface* stringComparator)
-        : _fieldNamesMode(fieldNamesMode), _stringComparator(stringComparator) {}
+        : _fieldNamesMode(fieldNamesMode), _stringComparator(stringComparator), _implicitTypeConversion(false) {}
+	
+	BSONElementComparator(FieldNamesMode fieldNamesMode,
+                          const StringData::ComparatorInterface* stringComparator,
+						  bool implicitTypeConversion)
+        : _fieldNamesMode(fieldNamesMode), _stringComparator(stringComparator), _implicitTypeConversion(implicitTypeConversion) {}
+	
 
     int compare(const BSONElement& lhs, const BSONElement& rhs) const final {
         const bool considerFieldName = (_fieldNamesMode == FieldNamesMode::kConsider);
+		if( _implicitTypeConversion && !considerFieldName )
+			return compareElementValuesImplicit(lhs, rhs, _stringComparator);
         return lhs.woCompare(rhs, considerFieldName, _stringComparator);
     }
 
@@ -68,44 +76,8 @@ public:
     }
 
 private:
+	bool _implicitTypeConversion;
     FieldNamesMode _fieldNamesMode;
-    const StringData::ComparatorInterface* _stringComparator;
-};
-
-/**
- * A BSONElement implicit comparator that supports:
- * - Ignoring field names during comparison.
- * - Passing a custom string comparator.
- */
-class BSONElementComparatorImplicit final : public BSONElement::ComparatorInterface {
-public:
-    /**
-     * Constructs a BSONElement comparator.
-     *
-     * Will not consider the elements' field names in comparisons if 'fieldNamesMode' is kIgnore.
-     *
-     * If 'stringComparator' is null, uses default binary string comparison. Otherwise,
-     * 'stringComparator' is used for all string comparisons.
-     */
-    BSONElementComparatorImplicit(BSONElementComparator::FieldNamesMode fieldNamesMode,
-                          const StringData::ComparatorInterface* stringComparator)
-        : _fieldNamesMode(fieldNamesMode), _stringComparator(stringComparator) {}
-
-    int compare(const BSONElement& lhs, const BSONElement& rhs) const final {
-        const bool considerFieldName = (_fieldNamesMode == BSONElementComparator::FieldNamesMode::kConsider);
-		if( considerFieldName )
-			return lhs.woCompare(rhs, considerFieldName, _stringComparator);
-		else
-			return compareElementValuesImplicit(lhs, rhs, _stringComparator);
-    }
-
-    void hash_combine(size_t& seed, const BSONElement& toHash) const final {
-        const bool considerFieldName = (_fieldNamesMode == BSONElementComparator::FieldNamesMode::kConsider);
-        hashCombineBSONElement(seed, toHash, considerFieldName, _stringComparator);
-    }
-
-private:
-    BSONElementComparator::FieldNamesMode _fieldNamesMode;
     const StringData::ComparatorInterface* _stringComparator;
 };
 
