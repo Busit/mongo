@@ -730,7 +730,7 @@ bool InMatchExpression::equivalent(const MatchExpression* other) const {
     for (; thisEqIt != _equalitySet.end(); ++thisEqIt, ++otherEqIt) {
 		if( serverGlobalParams.implicitTypeConversion )
 		{
-			if(compareElementValuesImplicit(thisEqIt, *otherEqIt, _collator))
+			if(compareElementValuesImplicit(*thisEqIt, *otherEqIt, _collator))
 				return false;
 		}
 		else
