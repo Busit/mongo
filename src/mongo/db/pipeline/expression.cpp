@@ -4079,6 +4079,13 @@ Value ExpressionRoundDate::evaluateInternal(Variables* vars) const {
 	Value pDate(vpOperand[0]->evaluateInternal(vars));
 	Value pMode(vpOperand[1]->evaluateInternal(vars));
 	
+	int mul = 0;
+	if( vpOperand.size() == 3 )
+	{
+		Value pMultiple(vpOperand[2]->evaluateInternal(vars).numeric() )
+		mul = pMultiple.coerceToInt();
+	}
+	
 	uassert(40640,
             str::stream() << "$roundDate requires an expression that evaluates to a string as a second argument"
                              ", found: "
@@ -4087,12 +4094,12 @@ Value ExpressionRoundDate::evaluateInternal(Variables* vars) const {
 	
 	tm time = pDate.coerceToTm();
 	std::string mode = pMode.getString();
-	if( mode == "minute" ) { time.tm_sec = 0; }
-	else if( mode == "hour" ) { time.tm_min = 0; time.tm_sec = 0; }
-	else if( mode == "day" ) { time.tm_hour = 0; time.tm_min = 0; time.tm_sec = 0; }
-	else if( mode == "week" ) { time.tm_mday = time.tm_mday - time.tm_wday; time.tm_hour = 0; time.tm_min = 0; time.tm_sec = 0; }
-	else if( mode == "month" ) { time.tm_mday = 1; time.tm_hour = 0; time.tm_min = 0; time.tm_sec = 0; }
-	else if( mode == "year" ) { time.tm_mon = 0; time.tm_mday = 1; time.tm_hour = 0; time.tm_min = 0; time.tm_sec = 0; }
+	if( mode == "minute" ) { time.tm_sec = 0; if( mul > 0 ) { time.tm_min -= time.tm_min % mul; } }
+	else if( mode == "hour" ) { time.tm_min = 0; time.tm_sec = 0; if( mul > 0 ) { time.tm_hour -= time.tm_hour % mul; } }
+	else if( mode == "day" ) { time.tm_hour = 0; time.tm_min = 0; time.tm_sec = 0; if( mul > 0 ) { time.tm_mday -= time.tm_mday % mul; } }
+	else if( mode == "week" ) { time.tm_yday = time.tm_yday - time.tm_wday; time.tm_hour = 0; time.tm_min = 0; time.tm_sec = 0; if( mul > 0 ) { time.tm_yday -= time.tm_yday % (mul*7); } }
+	else if( mode == "month" ) { time.tm_mday = 1; time.tm_hour = 0; time.tm_min = 0; time.tm_sec = 0; if( mul > 0 ) { time.tm_mon -= time.tm_mon % mul; } }
+	else if( mode == "year" ) { time.tm_mon = 0; time.tm_mday = 1; time.tm_hour = 0; time.tm_min = 0; time.tm_sec = 0; if( mul > 0 ) { time.tm_year -= time.tm_year % mul; } }
 	else
 	{
 		uassert(40641,
