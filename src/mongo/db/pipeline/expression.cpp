@@ -4082,7 +4082,7 @@ Value ExpressionRoundDate::evaluateInternal(Variables* vars) const {
 	int mul = 0;
 	if( vpOperand.size() == 3 )
 	{
-		Value pMultiple(vpOperand[2]->evaluateInternal(vars).numeric() )
+		Value pMultiple(vpOperand[2]->evaluateInternal(vars));
 		mul = pMultiple.coerceToInt();
 	}
 	
